@@ -1,0 +1,68 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # Weekly Monday 6AM
+
+jobs:
+  # ——— Dependency Scan (Snyk) ———
+  snyk:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend, fraud-service, notification-service]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snyk/actions/node@master
+        with:
+          args: --all-projects --severity-threshold=high
+          command: test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+  # ——— DAST (OWASP ZAP) ———
+  zap-scan:
+    runs-on: ubuntu-latest
+    needs: snyk
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start application stack
+        run: docker-compose up -d --build
+        timeout-minutes: 10
+
+      - name: Wait for services
+        run: |
+          echo "Waiting for backend..."
+          timeout 60 sh -c 'until curl -f http://localhost:3001/api/health; do sleep 2; done'
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: "http://localhost:3001"
+          rules_file_name: ".zap/rules.tsv"
+          cmd_options: "-a"
+
+      - name: Stop stack
+        if: always()
+        run: docker-compose down
+
+  # ——— Docker Image Scan (Trivy) ———
+  trivy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend, fraud-service, notification-service]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t marketplace/${{ matrix.service }}:scan ./${{ matrix.service }}
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: marketplace/${{ matrix.service }}:scan
+          format: "sarif"
+          output: "trivy-results-${{ matrix.service }}.sarif"
+          severity: "CRITICAL,HIGH"

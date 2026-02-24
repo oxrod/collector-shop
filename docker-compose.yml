@@ -1,0 +1,168 @@
+version: "3.8"
+
+services:
+  # ——— Database ———
+  postgres:
+    build: ./database
+    container_name: marketplace-db
+    environment:
+      POSTGRES_DB: marketplace
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: marketplace_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - marketplace-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketplace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ——— Auth (Keycloak) ———
+  keycloak:
+    build: ./auth
+    container_name: marketplace-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/marketplace
+      KC_DB_USERNAME: marketplace
+      KC_DB_PASSWORD: marketplace_secret
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - marketplace-net
+
+  # ——— Backend (NestJS) ———
+  backend:
+    build: ./backend
+    container_name: marketplace-backend
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: marketplace
+      DB_PASSWORD: marketplace_secret
+      DB_DATABASE: marketplace
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: marketplace
+      KEYCLOAK_CLIENT_ID: marketplace-app
+      FRAUD_SERVICE_URL: http://fraud-service:3002
+      NOTIFICATION_SERVICE_URL: http://notification-service:3003
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - marketplace-net
+
+  # ——— Fraud Service ———
+  fraud-service:
+    build: ./fraud-service
+    container_name: marketplace-fraud
+    environment:
+      PORT: 3002
+    ports:
+      - "3002:3002"
+    networks:
+      - marketplace-net
+
+  # ——— Notification Service ———
+  notification-service:
+    build: ./notification-service
+    container_name: marketplace-notification
+    environment:
+      PORT: 3003
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+    ports:
+      - "3003:3003"
+    depends_on:
+      - mailhog
+    networks:
+      - marketplace-net
+
+  # ——— Frontend (React) ———
+  frontend:
+    build: ./frontend
+    container_name: marketplace-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - marketplace-net
+
+  # ——— MailHog (dev email testing) ———
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: marketplace-mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - marketplace-net
+
+  # ——— Prometheus ———
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: marketplace-prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - marketplace-net
+
+  # ——— Grafana ———
+  grafana:
+    image: grafana/grafana:latest
+    container_name: marketplace-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./monitoring/grafana/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml
+      - ./monitoring/grafana/dashboards/services.json:/var/lib/grafana/dashboards/services.json
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3100:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - marketplace-net
+
+  # ——— Alertmanager ———
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: marketplace-alertmanager
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    networks:
+      - marketplace-net
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  marketplace-net:
+    driver: bridge

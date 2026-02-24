@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-service
+  labels:
+    app: fraud-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fraud-service
+  template:
+    metadata:
+      labels:
+        app: fraud-service
+    spec:
+      containers:
+        - name: fraud-service
+          image: marketplace/fraud-service:latest
+          ports:
+            - containerPort: 3002
+          env:
+            - name: PORT
+              value: "3002"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-service
+spec:
+  selector:
+    app: fraud-service
+  ports:
+    - port: 3002
+      targetPort: 3002
+  type: ClusterIP
