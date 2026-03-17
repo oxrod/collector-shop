@@ -1,0 +1,6 @@
+http://localhost:3001/api/articles
+http://localhost:3001/api/articles
+http://localhost:3001/api/articles
+http://localhost:3001/api/articles
+http://localhost:3001/api/articles
+http://localhost:3001/api/categories

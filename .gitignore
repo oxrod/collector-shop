@@ -42,3 +42,7 @@ coverage/
 # JMeter
 tests/jmeter/results/
 tests/jmeter/*.jtl
+
+# Siege
+tests/siege/results/*
+!tests/siege/results/.gitkeep

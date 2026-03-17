@@ -1,0 +1,4 @@
+http://localhost:3002/health
+http://localhost:3003/health
+http://localhost:3002/metrics
+http://localhost:3003/metrics

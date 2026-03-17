@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "test": "jest --runInBand --timeout=30000",
-    "test:e2e": "jest --runInBand --timeout=30000"
+    "test:e2e": "jest --runInBand --timeout=30000",
+    "siege:baseline": "siege --rc=siege/siege.conf -c 25 -t 60S -f siege/urls-public.txt",
+    "siege:load": "siege --rc=siege/siege.conf -c 100 -t 120S -f siege/urls-public.txt",
+    "siege:stress": "siege --rc=siege/siege.conf -c 250 -t 60S -f siege/urls-stress.txt",
+    "siege:all": "bash siege/run-load-tests.sh"
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",

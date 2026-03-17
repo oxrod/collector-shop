@@ -1,0 +1,5 @@
+http://localhost:3001/api/health
+http://localhost:3001/api/articles
+http://localhost:3001/api/categories
+http://localhost:3001/api/shops
+http://localhost:3001/api/metrics
