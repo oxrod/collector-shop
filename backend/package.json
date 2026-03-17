@@ -65,7 +65,11 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "src/**/*.(t|j)s"
+      "src/**/*.(t|j)s",
+      "!src/main.ts",
+      "!src/app.module.ts",
+      "!src/**/*.module.ts",
+      "!src/**/*.dto.ts"
     ],
     "coverageDirectory": "coverage",
     "coverageThreshold": {
