@@ -1,17 +1,40 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { articlesApi, Article } from "../services/api";
+import {
+  articlesApi,
+  categoriesApi,
+  Article,
+  Category,
+  articleImageUrl,
+} from "../services/api";
+import keycloak from "../services/keycloak";
 
 export default function ArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [recommended, setRecommended] = useState<Article[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    articlesApi
-      .getAll()
-      .then(setArticles)
-      .catch((_err) => setError("Erreur lors du chargement des articles"))
+    const promises: Promise<any>[] = [
+      articlesApi.getAll().then(setArticles),
+      categoriesApi
+        .getAll()
+        .then(setCategories)
+        .catch(() => []),
+    ];
+    if (keycloak.authenticated) {
+      promises.push(
+        articlesApi
+          .getRecommended()
+          .then(setRecommended)
+          .catch(() => []),
+      );
+    }
+    Promise.all(promises)
+      .catch(() => setError("Erreur lors du chargement des articles"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -22,6 +45,10 @@ export default function ArticlesPage() {
       </div>
     );
   }
+
+  const filtered = selectedCat
+    ? articles.filter((a) => a.categoryId === selectedCat)
+    : articles;
 
   return (
     <>
@@ -36,7 +63,94 @@ export default function ArticlesPage() {
       <div className="page">
         {error && <div className="alert alert-error">{error}</div>}
 
-        {articles.length === 0 ? (
+        {/* Recommended section */}
+        {keycloak.authenticated && recommended.length > 0 && (
+          <div style={{ marginBottom: "2.5rem" }}>
+            <h2
+              style={{
+                fontSize: "1.3rem",
+                fontWeight: 700,
+                marginBottom: "1rem",
+              }}
+            >
+              🎯 Recommandés pour vous
+            </h2>
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                overflowX: "auto",
+                paddingBottom: "0.5rem",
+              }}
+            >
+              {recommended.slice(0, 6).map((article) => (
+                <Link
+                  to={`/articles/${article.id}`}
+                  key={article.id}
+                  style={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    minWidth: 220,
+                    flexShrink: 0,
+                  }}
+                >
+                  <div className="card">
+                    <img
+                      src={articleImageUrl(article)}
+                      alt={article.title}
+                      className="card-image"
+                      style={{ height: 150 }}
+                    />
+                    <div className="card-body" style={{ padding: "0.8rem" }}>
+                      <h3
+                        className="card-title"
+                        style={{ fontSize: "0.95rem" }}
+                      >
+                        {article.title}
+                      </h3>
+                      <span
+                        className="card-price"
+                        style={{ fontSize: "1.1rem" }}
+                      >
+                        {Number(article.price).toFixed(2)} €
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Category filter chips */}
+        {categories.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.5rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <button
+              className={selectedCat === null ? "chip chip-active" : "chip"}
+              onClick={() => setSelectedCat(null)}
+            >
+              Toutes
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                className={selectedCat === cat.id ? "chip chip-active" : "chip"}
+                onClick={() => setSelectedCat(cat.id)}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {filtered.length === 0 ? (
           <div
             style={{
               textAlign: "center",
@@ -51,32 +165,18 @@ export default function ArticlesPage() {
           </div>
         ) : (
           <div className="articles-grid">
-            {articles.map((article) => (
+            {filtered.map((article) => (
               <Link
                 to={`/articles/${article.id}`}
                 key={article.id}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
                 <div className="card">
-                  {article.photoUrls && article.photoUrls.length > 0 ? (
-                    <img
-                      src={article.photoUrls[0]}
-                      alt={article.title}
-                      className="card-image"
-                    />
-                  ) : (
-                    <div
-                      className="card-image"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "3rem",
-                      }}
-                    >
-                      📦
-                    </div>
-                  )}
+                  <img
+                    src={articleImageUrl(article)}
+                    alt={article.title}
+                    className="card-image"
+                  />
                   <div className="card-body">
                     <div
                       style={{
@@ -92,16 +192,7 @@ export default function ArticlesPage() {
                       </span>
                     </div>
                     {article.condition && (
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          background: "var(--bg-secondary, #f0f0f0)",
-                          padding: "0.15rem 0.5rem",
-                          borderRadius: "4px",
-                          marginBottom: "0.5rem",
-                          display: "inline-block",
-                        }}
-                      >
+                      <span className="chip" style={{ marginBottom: "0.5rem" }}>
                         {article.condition}
                       </span>
                     )}

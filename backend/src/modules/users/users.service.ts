@@ -2,12 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
+import { UserInterest } from './user-interest.entity';
 
 @Injectable()
 export class UsersService {
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
+        @InjectRepository(UserInterest)
+        private readonly userInterestRepository: Repository<UserInterest>,
     ) { }
 
     async findAll(): Promise<User[]> {
@@ -45,4 +48,29 @@ export class UsersService {
         user.role = role;
         return this.userRepository.save(user);
     }
+
+    // --- Centres d'intérêt ---
+
+    async getInterests(userId: string): Promise<UserInterest[]> {
+        return this.userInterestRepository.find({
+            where: { userId },
+            relations: ['category'],
+        });
+    }
+
+    async addInterest(userId: string, categoryId: string): Promise<UserInterest> {
+        const existing = await this.userInterestRepository.findOne({
+            where: { userId, categoryId },
+        });
+        if (existing) {
+            return existing;
+        }
+        const interest = this.userInterestRepository.create({ userId, categoryId });
+        return this.userInterestRepository.save(interest);
+    }
+
+    async removeInterest(userId: string, categoryId: string): Promise<void> {
+        await this.userInterestRepository.delete({ userId, categoryId });
+    }
 }
+

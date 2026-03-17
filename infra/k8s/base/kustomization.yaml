@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      project: marketplace
+    includeSelectors: false
+
+resources:
+  - postgres/deployment.yaml
+  - keycloak/deployment.yaml
+  - backend/deployment.yaml
+  - frontend/deployment.yaml
+  - fraud-service/deployment.yaml
+  - notification-service/deployment.yaml
+  - monitoring/deployment.yaml
+  - ingress.yaml
+
+configMapGenerator:
+  - name: postgres-init
+    files:
+      - init.sql=postgres/init.sql
+    options:
+      disableNameSuffixHash: true
+  - name: prometheus-config
+    files:
+      - prometheus.yml=monitoring/prometheus.yml
+      - alert_rules.yml=monitoring/alert_rules.yml
+    options:
+      disableNameSuffixHash: true

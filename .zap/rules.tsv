@@ -1,0 +1,2 @@
+10021	IGNORE	X-Content-Type-Options header missing (often set by reverse proxy)
+10020	IGNORE	X-Frame-Options header (handled by Helmet in production)

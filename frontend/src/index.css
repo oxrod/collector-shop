@@ -36,7 +36,7 @@ a {
   text-decoration: none;
 }
 
-/* Navbar */
+/* ── Navbar ─────────────────────────────────────────── */
 .navbar {
   display: flex;
   align-items: center;
@@ -60,11 +60,40 @@ a {
 
 .navbar-links {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
 }
 
-/* Buttons */
+.nav-icon-btn {
+  position: relative;
+  font-size: 1.25rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.nav-icon-btn:hover {
+  background: var(--bg-card);
+}
+
+.nav-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: var(--danger);
+  color: white;
+  padding: 0.1rem 0.35rem;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── Buttons ────────────────────────────────────────── */
 .btn {
   padding: 0.6rem 1.2rem;
   border: none;
@@ -76,6 +105,8 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  text-decoration: none;
+  color: var(--text);
 }
 
 .btn-primary {
@@ -87,6 +118,13 @@ a {
   background: var(--primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-outline {
@@ -105,7 +143,32 @@ a {
   color: white;
 }
 
-/* Cards */
+/* ── Chips / tags ───────────────────────────────────── */
+.chip {
+  display: inline-block;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+
+.chip-active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* ── Cards ──────────────────────────────────────────── */
 .card {
   background: var(--bg-card);
   border-radius: var(--radius);
@@ -164,16 +227,20 @@ a {
   background: rgba(239, 68, 68, 0.15);
   color: var(--danger);
 }
+.status-sold {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary);
+}
 
-/* Grid */
+/* ── Grid ───────────────────────────────────────────── */
 .articles-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
-  padding: 2rem;
+  padding: 0;
 }
 
-/* Forms */
+/* ── Forms ──────────────────────────────────────────── */
 .form-group {
   margin-bottom: 1.2rem;
 }
@@ -210,7 +277,15 @@ a {
   resize: vertical;
 }
 
-/* Page container */
+select.form-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+
+/* ── Page container ─────────────────────────────────── */
 .page {
   max-width: 1200px;
   margin: 0 auto;
@@ -226,7 +301,7 @@ a {
   -webkit-text-fill-color: transparent;
 }
 
-/* Alert / messages */
+/* ── Alert / messages ───────────────────────────────── */
 .alert {
   padding: 1rem;
   border-radius: 8px;
@@ -246,7 +321,7 @@ a {
   color: var(--danger);
 }
 
-/* Loading */
+/* ── Loading ────────────────────────────────────────── */
 .loading {
   display: flex;
   justify-content: center;
@@ -270,7 +345,7 @@ a {
   }
 }
 
-/* Hero */
+/* ── Hero ───────────────────────────────────────────── */
 .hero {
   text-align: center;
   padding: 4rem 2rem;
@@ -296,4 +371,52 @@ a {
   color: var(--text-muted);
   max-width: 600px;
   margin: 0 auto 2rem;
+}
+
+/* ── Chat bubbles ───────────────────────────────────── */
+.chat-bubble {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+.chat-me {
+  background: var(--primary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-other {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .navbar-links {
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .page {
+    padding: 1rem;
+  }
+
+  .articles-grid {
+    grid-template-columns: 1fr;
+  }
 }

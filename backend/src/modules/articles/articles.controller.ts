@@ -27,12 +27,28 @@ export class ArticlesController {
         return this.articlesService.findAll();
     }
 
+    @Get('recommended')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Articles recommandés selon centres d\'intérêt' })
+    @ApiResponse({ status: 200, description: 'Articles recommandés' })
+    findRecommended(@Request() req: any) {
+        return this.articlesService.findRecommended(req.user.sub);
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Obtenir un article par ID' })
     @ApiResponse({ status: 200, description: "Détails de l'article" })
     @ApiResponse({ status: 404, description: 'Article non trouvé' })
     findOne(@Param('id', ParseUUIDPipe) id: string) {
         return this.articlesService.findOne(id);
+    }
+
+    @Get(':id/price-history')
+    @ApiOperation({ summary: 'Historique de prix d\'un article' })
+    @ApiResponse({ status: 200, description: 'Historique des variations de prix' })
+    getPriceHistory(@Param('id', ParseUUIDPipe) id: string) {
+        return this.articlesService.getPriceHistory(id);
     }
 
     @Post()
@@ -64,3 +80,4 @@ export class ArticlesController {
         return this.articlesService.remove(id, req.user.sub);
     }
 }
+

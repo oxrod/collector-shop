@@ -1,0 +1,3 @@
+-- Optional init script for Postgres in Kubernetes.
+-- Runs once when the container is first created.
+-- Example: CREATE SCHEMA IF NOT EXISTS app;

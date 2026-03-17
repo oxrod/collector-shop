@@ -1,0 +1,53 @@
+FAIL test/rules.spec.ts
+  Price Rules
+    ÔêÜ should accept valid price (2 ms)
+    ÔêÜ should reject negative price (1 ms)
+    ÔêÜ should flag suspiciously low price
+    ÔêÜ should flag extremely high price (1 ms)
+    ÔêÜ should flag price with too many decimals
+  Content Rules
+    ├ù should accept valid content (2 ms)
+    ÔêÜ should flag forbidden words
+    ÔêÜ should flag short description
+    ÔêÜ should flag short title
+    ├ù should flag excessive caps (1 ms)
+
+  ÔùÅ Content Rules ÔÇ║ should accept valid content
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 0.3
+
+      40 |             'Excellent ├®tat, vendu avec bo├«te originale et accessoires. Ce t├®l├®phone est en parfait ├®tat de fonctionnement, sans aucune rayure, livr├® avec tous les accessoires originaux et la bo├«te.',
+      41 |         );
+    > 42 |         expect(result.score).toBe(0);
+         |                              ^
+      43 |         expect(result.reasons).toHaveLength(0);
+      44 |     });
+      45 |
+
+      at Object.<anonymous> (test/rules.spec.ts:42:30)
+
+  ÔùÅ Content Rules ÔÇ║ should flag excessive caps
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected value: "Utilisation excessive de majuscules"
+    Received array: ["Description trop courte (31 mots, minimum 50 requis)"]
+
+      67 |             'THIS IS ALL CAPS DESCRIPTION WHICH SHOULD TRIGGER THE UPPERCASE CHECK BECAUSE IT HAS WAY TOO MANY CAPITAL LETTERS AND IS DEFINITELY SPAM CONTENT THAT SHOULD BE FLAGGED BY OUR SYSTEM',
+      68 |         );
+    > 69 |         expect(result.reasons).toContain('Utilisation excessive de majuscules');
+         |                                ^
+      70 |     });
+      71 | });
+      72 |
+
+      at Object.<anonymous> (test/rules.spec.ts:69:32)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 8 passed, 10 total
+Snapshots:   0 total
+Time:        1.307 s, estimated 2 s
+Ran all test suites.

@@ -43,7 +43,6 @@ jobs:
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: "http://localhost:3001"
-          rules_file_name: ".zap/rules.tsv"
           cmd_options: "-a"
 
       - name: Stop stack

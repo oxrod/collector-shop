@@ -1,12 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { articlesApi } from "../services/api";
+import {
+  articlesApi,
+  categoriesApi,
+  shopsApi,
+  Category,
+  Shop,
+} from "../services/api";
 
 export default function PublishArticlePage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [shops, setShops] = useState<Shop[]>([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -14,7 +22,20 @@ export default function PublishArticlePage() {
     shippingCost: "",
     photoUrls: "",
     condition: "Bon état",
+    categoryId: "",
+    shopId: "",
   });
+
+  useEffect(() => {
+    categoriesApi
+      .getAll()
+      .then(setCategories)
+      .catch(() => {});
+    shopsApi
+      .getAll()
+      .then(setShops)
+      .catch(() => {});
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -59,6 +80,8 @@ export default function PublishArticlePage() {
         shippingCost,
         photoUrls: photoUrls.length > 0 ? photoUrls : undefined,
         condition: form.condition || undefined,
+        categoryId: form.categoryId || undefined,
+        shopId: form.shopId || undefined,
       });
 
       setSuccess(
@@ -150,23 +173,67 @@ export default function PublishArticlePage() {
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="condition">
-                État
-              </label>
-              <select
-                id="condition"
-                className="form-input"
-                name="condition"
-                value={form.condition}
-                onChange={handleChange}
-              >
-                <option value="Neuf">Neuf</option>
-                <option value="Très bon état">Très bon état</option>
-                <option value="Bon état">Bon état</option>
-                <option value="Correct">Correct</option>
-              </select>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label" htmlFor="condition">
+                  État
+                </label>
+                <select
+                  id="condition"
+                  className="form-input"
+                  name="condition"
+                  value={form.condition}
+                  onChange={handleChange}
+                >
+                  <option value="Neuf">Neuf</option>
+                  <option value="Très bon état">Très bon état</option>
+                  <option value="Bon état">Bon état</option>
+                  <option value="Correct">Correct</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label" htmlFor="categoryId">
+                  Catégorie
+                </label>
+                <select
+                  id="categoryId"
+                  className="form-input"
+                  name="categoryId"
+                  value={form.categoryId}
+                  onChange={handleChange}
+                >
+                  <option value="">-- Aucune --</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            {shops.length > 0 && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="shopId">
+                  Boutique
+                </label>
+                <select
+                  id="shopId"
+                  className="form-input"
+                  name="shopId"
+                  value={form.shopId}
+                  onChange={handleChange}
+                >
+                  <option value="">-- Aucune --</option>
+                  {shops.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label" htmlFor="photoUrls">

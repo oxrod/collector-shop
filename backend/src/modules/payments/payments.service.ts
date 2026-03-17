@@ -26,11 +26,16 @@ export class PaymentsService {
         sellerId: string,
         amount: number,
     ): Promise<{ clientSecret: string; transactionId: string }> {
+        // 5% commission as per context.md business model
+        const commissionRate = 0.05;
+        const commission = Math.round(amount * commissionRate * 100) / 100;
+        const totalAmount = amount + commission;
+
         // Create Stripe PaymentIntent
         const paymentIntent = await this.stripe.paymentIntents.create({
-            amount: Math.round(amount * 100), // Stripe expects cents
+            amount: Math.round(totalAmount * 100), // Stripe expects cents
             currency: 'eur',
-            metadata: { articleId, buyerId, sellerId },
+            metadata: { articleId, buyerId, sellerId, commission: commission.toString() },
         });
 
         // Create transaction record
@@ -39,6 +44,7 @@ export class PaymentsService {
             buyerId,
             sellerId,
             amount,
+            commission,
             stripePaymentId: paymentIntent.id,
             status: 'pending',
         });

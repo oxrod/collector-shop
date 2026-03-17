@@ -11,6 +11,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ShopsModule } from './modules/shops/shops.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
     imports: [
@@ -40,8 +41,10 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
         CategoriesModule,
         ShopsModule,
         ReviewsModule,
+        NotificationsModule,
         HealthModule,
         MetricsModule,
     ],
 })
 export class AppModule { }
+

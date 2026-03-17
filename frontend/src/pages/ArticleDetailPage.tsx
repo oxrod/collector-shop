@@ -1,21 +1,52 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { articlesApi, Article } from "../services/api";
+import {
+  articlesApi,
+  reviewsApi,
+  Article,
+  Review,
+  PriceHistoryEntry,
+  articleImageUrl,
+} from "../services/api";
+import keycloak from "../services/keycloak";
 
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<Article | null>(null);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [avgRating, setAvgRating] = useState<{
+    average: number;
+    count: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
+    if (!id) return;
+    Promise.all([
       articlesApi
         .getOne(id)
         .then(setArticle)
-        .catch(() => setArticle(null))
-        .finally(() => setLoading(false));
-    }
+        .catch(() => null),
+      articlesApi
+        .getPriceHistory(id)
+        .then(setPriceHistory)
+        .catch(() => []),
+    ]).finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (article?.sellerId) {
+      reviewsApi
+        .getByUser(article.sellerId)
+        .then(setReviews)
+        .catch(() => []);
+      reviewsApi
+        .getAverageRating(article.sellerId)
+        .then(setAvgRating)
+        .catch(() => {});
+    }
+  }, [article]);
 
   if (loading) {
     return (
@@ -50,27 +81,12 @@ export default function ArticleDetailPage() {
       </Link>
 
       <div className="card" style={{ maxWidth: "800px", margin: "0 auto" }}>
-        {article.photoUrls && article.photoUrls.length > 0 ? (
-          <img
-            src={article.photoUrls[0]}
-            alt={article.title}
-            className="card-image"
-            style={{ height: "400px" }}
-          />
-        ) : (
-          <div
-            className="card-image"
-            style={{
-              height: "400px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "5rem",
-            }}
-          >
-            📦
-          </div>
-        )}
+        <img
+          src={articleImageUrl(article)}
+          alt={article.title}
+          className="card-image"
+          style={{ height: "400px" }}
+        />
         <div className="card-body" style={{ padding: "2rem" }}>
           <div
             style={{
@@ -97,28 +113,10 @@ export default function ArticleDetailPage() {
             }}
           >
             {article.condition && (
-              <span
-                style={{
-                  fontSize: "0.8rem",
-                  background: "var(--bg-secondary, #f0f0f0)",
-                  padding: "0.25rem 0.6rem",
-                  borderRadius: "4px",
-                }}
-              >
-                {article.condition}
-              </span>
+              <span className="chip">{article.condition}</span>
             )}
             {article.category && (
-              <span
-                style={{
-                  fontSize: "0.8rem",
-                  background: "var(--bg-secondary, #f0f0f0)",
-                  padding: "0.25rem 0.6rem",
-                  borderRadius: "4px",
-                }}
-              >
-                {article.category.name}
-              </span>
+              <span className="chip">{article.category.name}</span>
             )}
           </div>
 
@@ -149,48 +147,183 @@ export default function ArticleDetailPage() {
             <p style={{ lineHeight: 1.8 }}>{article.description}</p>
           </div>
 
+          {/* Price history */}
+          {priceHistory.length > 0 && (
+            <div style={{ marginBottom: "1.5rem" }}>
+              <h3
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "0.9rem",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                📈 Historique des prix
+              </h3>
+              <div
+                style={{
+                  background: "var(--bg)",
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  fontSize: "0.85rem",
+                }}
+              >
+                {priceHistory.map((ph) => (
+                  <div
+                    key={ph.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "0.4rem 0",
+                      borderBottom: "1px solid var(--border)",
+                    }}
+                  >
+                    <span>
+                      <span
+                        style={{
+                          textDecoration: "line-through",
+                          color: "var(--danger)",
+                        }}
+                      >
+                        {Number(ph.oldPrice).toFixed(2)} €
+                      </span>
+                      {" → "}
+                      <span
+                        style={{ color: "var(--success)", fontWeight: 600 }}
+                      >
+                        {Number(ph.newPrice).toFixed(2)} €
+                      </span>
+                    </span>
+                    <span style={{ color: "var(--text-muted)" }}>
+                      {new Date(ph.changedAt).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Seller info */}
           {article.seller && (
             <div
               style={{
                 borderTop: "1px solid var(--border)",
                 paddingTop: "1rem",
                 color: "var(--text-muted)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
-              Vendu par{" "}
-              <strong style={{ color: "var(--text)" }}>
-                {article.seller.username}
-              </strong>
-              {article.shop && (
-                <>
-                  {" "}
-                  · Boutique :{" "}
-                  <strong style={{ color: "var(--text)" }}>
-                    {article.shop.name}
-                  </strong>
-                </>
-              )}
-              {" · "}
-              Publié le{" "}
-              {new Date(article.createdAt).toLocaleDateString("fr-FR")}
+              <div>
+                Vendu par{" "}
+                <strong style={{ color: "var(--text)" }}>
+                  {article.seller.username}
+                </strong>
+                {article.shop && (
+                  <>
+                    {" · "}
+                    <Link
+                      to={`/shops/${article.shopId}`}
+                      style={{ color: "var(--primary)" }}
+                    >
+                      Boutique : {article.shop.name}
+                    </Link>
+                  </>
+                )}
+                {" · "}Publié le{" "}
+                {new Date(article.createdAt).toLocaleDateString("fr-FR")}
+                {avgRating && avgRating.count > 0 && (
+                  <>
+                    {" · "}
+                    <span style={{ color: "var(--warning)" }}>
+                      ★ {avgRating.average.toFixed(1)}
+                    </span>{" "}
+                    ({avgRating.count} avis)
+                  </>
+                )}
+              </div>
             </div>
           )}
 
-          {article.status === "validated" && (
-            <button
-              className="btn btn-primary"
-              style={{
-                width: "100%",
-                marginTop: "1.5rem",
-                padding: "1rem",
-                fontSize: "1.1rem",
-              }}
-            >
-              Acheter maintenant
-            </button>
-          )}
+          {/* Actions */}
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
+            {article.status === "validated" && (
+              <button
+                className="btn btn-primary"
+                style={{
+                  flex: 1,
+                  padding: "1rem",
+                  fontSize: "1.1rem",
+                }}
+              >
+                Acheter maintenant
+              </button>
+            )}
+            {keycloak.authenticated && (
+              <Link
+                to={`/chat/${article.id}`}
+                className="btn btn-outline"
+                style={{ padding: "1rem", fontSize: "1.1rem" }}
+              >
+                💬 Contacter le vendeur
+              </Link>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Reviews */}
+      {reviews.length > 0 && (
+        <div style={{ maxWidth: "800px", margin: "2rem auto 0" }}>
+          <h2
+            style={{
+              fontSize: "1.3rem",
+              fontWeight: 700,
+              marginBottom: "1rem",
+            }}
+          >
+            📝 Avis sur ce vendeur
+          </h2>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+          >
+            {reviews.slice(0, 5).map((r) => (
+              <div key={r.id} className="card">
+                <div className="card-body" style={{ padding: "1rem 1.5rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    <div>
+                      <span style={{ color: "var(--warning)" }}>
+                        {"★".repeat(r.rating)}
+                        {"☆".repeat(5 - r.rating)}
+                      </span>
+                      <strong style={{ marginLeft: "0.5rem" }}>
+                        {r.reviewer?.username || "Anonyme"}
+                      </strong>
+                    </div>
+                    <span
+                      style={{
+                        color: "var(--text-muted)",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      {new Date(r.createdAt).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                    {r.comment}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
