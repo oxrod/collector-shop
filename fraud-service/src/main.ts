@@ -129,8 +129,10 @@ app.post('/validate', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`🔍 Fraud Service running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🔍 Fraud Service running on http://localhost:${PORT}`);
+    });
+}
 
 export default app;

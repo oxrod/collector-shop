@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ArticlesService } from '../src/modules/articles/articles.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Article } from '../src/modules/articles/article.entity';
+import { PriceHistory } from '../src/modules/articles/price-history.entity';
+import { UserInterest } from '../src/modules/users/user-interest.entity';
 import { ConfigService } from '@nestjs/config';
 
 const mockRepository = {
@@ -10,6 +12,16 @@ const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+};
+
+const mockPriceHistoryRepository = {
+    find: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+};
+
+const mockUserInterestRepository = {
+    find: jest.fn(),
 };
 
 describe('ArticlesService', () => {
@@ -22,6 +34,14 @@ describe('ArticlesService', () => {
                 {
                     provide: getRepositoryToken(Article),
                     useValue: mockRepository,
+                },
+                {
+                    provide: getRepositoryToken(PriceHistory),
+                    useValue: mockPriceHistoryRepository,
+                },
+                {
+                    provide: getRepositoryToken(UserInterest),
+                    useValue: mockUserInterestRepository,
                 },
                 {
                     provide: ConfigService,

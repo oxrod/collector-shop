@@ -37,7 +37,7 @@ describe('Content Rules', () => {
     it('should accept valid content', () => {
         const result = validateContent(
             'iPhone 15 Pro',
-            'Excellent état, vendu avec boîte originale et accessoires. Ce téléphone est en parfait état de fonctionnement, sans aucune rayure, livré avec tous les accessoires originaux et la boîte.',
+            'Excellent état, vendu avec boîte originale et accessoires. Ce téléphone est en parfait état de fonctionnement, sans aucune rayure, livré avec tous les accessoires originaux et la boîte. Il a été acheté en magasin il y a six mois et utilisé avec une coque de protection en permanence. La batterie tient encore toute la journée sans problème et toutes les fonctionnalités marchent parfaitement bien.',
         );
         expect(result.score).toBe(0);
         expect(result.reasons).toHaveLength(0);
@@ -64,7 +64,7 @@ describe('Content Rules', () => {
     it('should flag excessive caps', () => {
         const result = validateContent(
             'SUPER ARTICLE INCROYABLE',
-            'THIS IS ALL CAPS DESCRIPTION WHICH SHOULD TRIGGER THE UPPERCASE CHECK BECAUSE IT HAS WAY TOO MANY CAPITAL LETTERS AND IS DEFINITELY SPAM CONTENT THAT SHOULD BE FLAGGED BY OUR SYSTEM',
+            'THIS IS ALL CAPS DESCRIPTION WHICH SHOULD TRIGGER THE UPPERCASE CHECK BECAUSE IT HAS WAY TOO MANY CAPITAL LETTERS AND IS DEFINITELY SPAM CONTENT THAT SHOULD BE FLAGGED BY OUR SYSTEM AND REALLY NEEDS TO BE DETECTED BY THE FRAUD SERVICE BECAUSE NOBODY WRITES LIKE THIS IN A LEGITIMATE LISTING ON THE PLATFORM',
         );
         expect(result.reasons).toContain('Utilisation excessive de majuscules');
     });

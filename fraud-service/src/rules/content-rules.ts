@@ -51,15 +51,16 @@ export function validateContent(title: string, description: string): ValidationR
         score += 0.2;
     }
 
-    // Check for excessive caps (spam indicator)
-    const uppercaseRatio = (fullText.match(/[A-Z]/g) || []).length / fullText.length;
-    if (uppercaseRatio > 0.6 && fullText.length > 10) {
+    // Check for excessive caps (spam indicator) — use original text, not lowercased
+    const originalText = `${title} ${description}`;
+    const uppercaseRatio = (originalText.match(/[A-Z]/g) || []).length / originalText.length;
+    if (uppercaseRatio > 0.6 && originalText.length > 10) {
         reasons.push('Utilisation excessive de majuscules');
         score += 0.2;
     }
 
     // Check for repeated characters (spam indicator)
-    if (/(.)\\1{4,}/.test(fullText)) {
+    if (/(.)\1{4,}/.test(fullText)) {
         reasons.push('Répétition excessive de caractères détectée');
         score += 0.2;
     }

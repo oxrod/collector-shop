@@ -151,8 +151,10 @@ app.get('/types', (_req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`📧 Notification Service running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`📧 Notification Service running on http://localhost:${PORT}`);
+    });
+}
 
 export default app;
