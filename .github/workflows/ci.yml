@@ -120,7 +120,7 @@ jobs:
             curl -sf http://localhost:3001/api/health && break
             sleep 2
           done
-          cd ../tests && npm ci && npm test
+          cd tests && npm ci && npm test
 
   # ——— Frontend ———
   frontend:
