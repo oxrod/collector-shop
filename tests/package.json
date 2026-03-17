@@ -17,7 +17,7 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "rootDir": ".",
-    "testMatch": ["e2e/**/*.test.ts"],
+    "testMatch": ["<rootDir>/e2e/**/*.test.ts"],
     "moduleFileExtensions": ["ts", "js", "json"]
   }
 }
