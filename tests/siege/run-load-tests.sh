@@ -89,22 +89,27 @@ run_scenario() {
   local duration="$3"
   local urls_file="$4"
   local log_file="$RESULTS_DIR/${name}_${TIMESTAMP}.log"
-  local header_args=()
-
-  if [ -n "$SIEGE_HEADER" ]; then
-    header_args=(--header="$SIEGE_HEADER")
-  fi
 
   print_header "$name — ${concurrent} concurrent users / ${duration}"
 
-  siege \
-    --rc="$SIEGE_CONF" \
-    -c "$concurrent" \
-    -t "$duration" \
-    -f "$urls_file" \
-    --log="$log_file" \
-    "${header_args[@]+"${header_args[@]}"}" \
-    2>&1 | tee "$RESULTS_DIR/${name}_${TIMESTAMP}_output.txt"
+  if [ -n "$SIEGE_HEADER" ]; then
+    siege \
+      --rc="$SIEGE_CONF" \
+      -c "$concurrent" \
+      -t "$duration" \
+      -f "$urls_file" \
+      --log="$log_file" \
+      --header="$SIEGE_HEADER" \
+      2>&1 | tee "$RESULTS_DIR/${name}_${TIMESTAMP}_output.txt"
+  else
+    siege \
+      --rc="$SIEGE_CONF" \
+      -c "$concurrent" \
+      -t "$duration" \
+      -f "$urls_file" \
+      --log="$log_file" \
+      2>&1 | tee "$RESULTS_DIR/${name}_${TIMESTAMP}_output.txt"
+  fi
 
   echo ""
   echo "Results saved to: $log_file"
