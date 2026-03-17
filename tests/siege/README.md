@@ -86,6 +86,11 @@ Les scripts acceptent des variables pour ajuster les paramètres sans modifier l
 
 | Variable | Défaut | Description |
 |----------|--------|-------------|
+| `BACKEND_URL` | `http://localhost:3001` | URL de base du backend (ou de la gateway) |
+| `FRAUD_URL` | `http://localhost:3002` | URL du fraud-service |
+| `NOTIFICATION_URL` | `http://localhost:3003` | URL du notification-service |
+| `SIEGE_HEADER` | _(vide)_ | Header HTTP additionnel (ex: `Host: staging.marketplace.local`) |
+| `GATEWAY_MODE` | `false` | Si `true`, teste aussi `/` (frontend) et `/auth` (Keycloak) |
 | `BASELINE_CONCURRENT` | 25 | Utilisateurs concurrents (baseline) |
 | `BASELINE_TIME` | 60S | Durée du test (baseline) |
 | `LOAD_CONCURRENT` | 100 | Utilisateurs concurrents (load) |
@@ -129,29 +134,104 @@ Shortest transaction:        0.01
 | Longest transaction | < 2000ms | Aucune requête ne doit dépasser 2s |
 | Failed transactions | < 1% du total | Taux d'erreur minimal |
 
+## Tests de charge sur Kubernetes (via Ingress Gateway)
+
+Le script `run-k8s-load-tests.sh` stress-teste l'infrastructure K8s complète en envoyant tout le trafic par la **gateway Ingress nginx**. Cela teste la chaîne complète :
+
+```
+Siege → Ingress Controller → Ingress Rules → Services → Pods → Database
+```
+
+### Usage
+
+```bash
+# Contre le namespace staging
+NAMESPACE=staging ./run-k8s-load-tests.sh
+
+# Contre le namespace production (concurrence réduite)
+NAMESPACE=production STRESS_CONCURRENT=100 ./run-k8s-load-tests.sh
+```
+
+### Fonctionnement
+
+Le script :
+
+1. Port-forward le **ingress-nginx-controller** (namespace `ingress-nginx`) vers le port local 8080
+2. Injecte le header `Host:` correspondant au namespace (`staging.marketplace.local`, `marketplace.example.com`)
+3. Active le **mode gateway** : les URLs incluent les 3 routes de l'ingress (`/` frontend, `/api` backend, `/auth` Keycloak)
+4. Exécute les scénarios Siege (baseline, load, stress)
+5. Ferme le port-forward automatiquement en sortie
+
+### Mode gateway vs mode direct
+
+| | Mode direct (par défaut) | Mode gateway (`GATEWAY_MODE=true`) |
+|---|---|---|
+| Cible | Service backend uniquement | Ingress → frontend + API + auth |
+| Header Host | Aucun | `Host: <ingress-hostname>` |
+| Endpoints testés | `/api/*` | `/`, `/api/*`, `/auth` |
+| Usage | Docker Compose, CI | Kubernetes |
+
+### Variables spécifiques K8s
+
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `NAMESPACE` | `staging` | Namespace K8s cible |
+| `INGRESS_NS` | `ingress-nginx` | Namespace de l'ingress controller |
+| `INGRESS_SVC` | `ingress-nginx-controller` | Nom du service ingress |
+| `INGRESS_LOCAL_PORT` | `8080` | Port local pour le port-forward |
+
+### Hostnames par environnement
+
+| Namespace | Hostname Ingress |
+|-----------|-----------------|
+| `default` (dev) | `marketplace.local` |
+| `staging` | `staging.marketplace.local` |
+| `production` | `marketplace.example.com` |
+
 ## Intégration CI/CD
 
-Les tests de charge sont exécutés automatiquement dans le pipeline GitHub Actions (job `load-test` dans `ci.yml`).
+### Pipeline CI (`ci.yml`)
 
-- Le job s'exécute après `backend` et `integration`
-- Les durées sont réduites en CI (30s/60s/30s) pour respecter les limites des runners
-- Les résultats sont uploadés comme artefact `siege-load-test-results`
-- Le job utilise `continue-on-error: true` : un échec ne bloque pas le pipeline
+Le job `load-test` s'exécute en CI avec le backend lancé localement (PostgreSQL en service container) :
 
-Pour consulter les résultats :
+- S'exécute après `backend` et `integration`
+- Durées réduites (30s/60s/30s) pour les runners CI
+- Artefact : `siege-load-test-results`
+
+### Pipeline Deploy (`deploy.yml`)
+
+Deux jobs de charge post-déploiement stress-testent l'infrastructure K8s via l'ingress gateway :
+
+| Job | Exécution | Host header | Artefact |
+|-----|-----------|-------------|----------|
+| `load-test-staging` | Après `deploy-staging` | `staging.marketplace.local` | `siege-staging-results` |
+| `load-test-production` | Après `deploy-production` | `marketplace.example.com` | `siege-production-results` |
+
+Chaque job :
+- Configure kubectl via `KUBE_CONFIG`
+- Port-forward le **ingress-nginx-controller** (port 80 -> local 8080)
+- Envoie les requêtes avec le header `Host:` correct pour le routage ingress
+- Active `GATEWAY_MODE=true` pour tester frontend + API + auth
+- Uploade les résultats comme artefact GitHub Actions
+- Utilise `continue-on-error: true` pour ne pas bloquer le pipeline
+
+### Consulter les résultats
+
 1. Aller sur l'onglet **Actions** du dépôt GitHub
 2. Sélectionner le run du pipeline
-3. Télécharger l'artefact `siege-load-test-results`
+3. Télécharger l'artefact correspondant (`siege-load-test-results`, `siege-staging-results` ou `siege-production-results`)
 
 ## Structure des fichiers
 
 ```
 tests/siege/
-├── urls-public.txt         # Endpoints publics (health, articles, categories, shops, metrics)
-├── urls-microservices.txt  # Endpoints des microservices (fraud, notification)
-├── urls-stress.txt         # Endpoints pondérés pour stress maximal
-├── siege.conf              # Configuration Siege
-├── run-load-tests.sh       # Script d'exécution (Linux/macOS)
-├── run-load-tests.ps1      # Script d'exécution (Windows/WSL)
-├── results/                # Résultats générés (gitignored)
-└── README.md               # Cette documentation
+├── urls-public.txt           # Endpoints publics (templates par défaut)
+├── urls-microservices.txt    # Endpoints microservices (templates par défaut)
+├── urls-stress.txt           # Endpoints pondérés pour stress maximal
+├── siege.conf                # Configuration Siege
+├── run-load-tests.sh         # Script principal (Linux/macOS), paramétrable via env vars
+├── run-load-tests.ps1        # Script principal (Windows/WSL)
+├── run-k8s-load-tests.sh     # Script K8s (port-forward automatique + siege)
+├── results/                  # Résultats générés (gitignored)
+└── README.md                 # Cette documentation
+```
