@@ -157,7 +157,7 @@ app.get('/types', (_req, res) => {
     });
 });
 
-if (require.main === module) {
+export function startServer() {
     const server = app.listen(PORT, HOST, () => {
         console.log(`📧 Notification Service running on http://${HOST}:${PORT}`);
     });
@@ -184,6 +184,12 @@ if (require.main === module) {
 
     process.on("SIGINT", () => shutdown("SIGINT"));
     process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+    return server;
+}
+
+if (require.main === module) {
+    startServer();
 }
 
 export default app;

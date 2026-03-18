@@ -1,9 +1,15 @@
 import http from 'http';
-import app from '../src/main';
+import app, { startServer } from '../src/main';
+
+const getSendMailMock = () => (globalThis as any).__sendMailMock as jest.Mock;
 
 jest.mock('nodemailer', () => ({
     createTransport: jest.fn().mockReturnValue({
-        sendMail: jest.fn().mockResolvedValue({ messageId: 'test-id' }),
+        sendMail: (() => {
+            const sendMailMock = jest.fn().mockResolvedValue({ messageId: 'test-id' });
+            (globalThis as any).__sendMailMock = sendMailMock;
+            return sendMailMock;
+        })(),
     }),
 }));
 
@@ -124,5 +130,82 @@ describe('Notify endpoint', () => {
                 expect.objectContaining({ channel: 'log', success: true }),
             ]),
         );
+    });
+
+    it('should handle email send failure and return email failure result', async () => {
+        getSendMailMock().mockRejectedValueOnce(new Error('SMTP down'));
+
+        const { status, data } = await request('POST', '/notify', {
+            userId: 'user-3',
+            type: 'article_validated',
+            title: 'Article validé',
+            message: 'Votre article a été validé.',
+            email: 'fail@example.com',
+        });
+
+        expect(status).toBe(200);
+        expect(data.success).toBe(true);
+        expect(data.channels).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    channel: 'email',
+                    success: false,
+                    error: 'SMTP down',
+                }),
+            ]),
+        );
+    });
+});
+
+describe('startServer (coverage)', () => {
+    it('should handle EADDRINUSE and shutdown signals without exiting the process', async () => {
+        let fakeServer: any;
+        fakeServer = {
+            on: jest.fn((event: string, handler: any) => {
+                if (event === 'error') {
+                    (fakeServer as any).__errorHandler = handler;
+                }
+                return fakeServer;
+            }),
+            close: jest.fn((cb: any) => cb?.()),
+        };
+
+        const listenSpy = jest
+            .spyOn(app as any, 'listen')
+            .mockImplementation((port: any, host: any, cb: any) => {
+                if (typeof host === 'function') {
+                    cb = host;
+                }
+                cb?.();
+                return fakeServer as any;
+            });
+
+        const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as any);
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        startServer();
+
+        // Trigger the error handler branch
+        try {
+            (fakeServer as any).__errorHandler({ code: 'EADDRINUSE' });
+            // If no error is thrown, the test should fail because the handler re-throws.
+            throw new Error('Expected server error handler to re-throw');
+        } catch (err: any) {
+            expect(err?.code).toBe('EADDRINUSE');
+        }
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        expect(exitSpy).toHaveBeenCalledWith(1);
+
+        // Trigger shutdown (SIGINT)
+        process.emit('SIGINT');
+        expect(consoleLogSpy).toHaveBeenCalled();
+        expect(fakeServer.close).toHaveBeenCalled();
+        expect(exitSpy).toHaveBeenCalledWith(0);
+
+        listenSpy.mockRestore();
+        exitSpy.mockRestore();
+        consoleErrorSpy.mockRestore();
+        consoleLogSpy.mockRestore();
     });
 });
