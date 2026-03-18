@@ -5,6 +5,7 @@ import { UsersService } from '../src/modules/users/users.service';
 import { UsersController } from '../src/modules/users/users.controller';
 import { User } from '../src/modules/users/user.entity';
 import { UserInterest } from '../src/modules/users/user-interest.entity';
+import { ForbiddenException } from '@nestjs/common';
 
 const mockUserRepository = {
     find: jest.fn(),
@@ -136,13 +137,13 @@ describe('UsersService', () => {
                 keycloakId: 'kc-123',
                 email: 'new@test.com',
                 username: 'newuser',
-                role: 'buyer',
+                role: 'admin',
             };
             mockUserRepository.create.mockReturnValue({
                 keycloakId: 'kc-123',
                 email: 'new@test.com',
                 username: 'newuser',
-                role: 'buyer',
+                role: 'admin',
             });
             mockUserRepository.save.mockResolvedValue(newUser);
 
@@ -156,7 +157,7 @@ describe('UsersService', () => {
                 keycloakId: 'kc-123',
                 email: 'new@test.com',
                 username: 'newuser',
-                role: 'buyer',
+                role: 'admin',
             });
             expect(mockUserRepository.save).toHaveBeenCalled();
         });
@@ -254,6 +255,8 @@ describe('UsersController', () => {
         addInterest: jest.Mock;
         removeInterest: jest.Mock;
         findOne: jest.Mock;
+        findAll: jest.Mock;
+        updateRole: jest.Mock;
     };
 
     beforeEach(async () => {
@@ -263,6 +266,8 @@ describe('UsersController', () => {
             addInterest: jest.fn(),
             removeInterest: jest.fn(),
             findOne: jest.fn(),
+            findAll: jest.fn(),
+            updateRole: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -304,7 +309,51 @@ describe('UsersController', () => {
                 'kc-123',
                 'test@test.com',
                 'testuser',
+                undefined,
             );
+        });
+    });
+
+    describe('getAdminModerationUsers', () => {
+        it('should filter out admins when admin role is present', async () => {
+            const req = { user: { appRoles: ['admin'] } };
+            usersService.findAll.mockResolvedValue([
+                { id: '1', role: 'admin' },
+                { id: '2', role: 'buyer' },
+            ]);
+
+            const result = await controller.getAdminModerationUsers(req);
+            expect(result).toEqual([{ id: '2', role: 'buyer' }]);
+            expect(usersService.findAll).toHaveBeenCalled();
+        });
+
+        it('should throw ForbiddenException when admin role is missing', async () => {
+            const req = { user: { appRoles: ['buyer'] } };
+            await expect(controller.getAdminModerationUsers(req)).rejects.toThrow(
+                ForbiddenException,
+            );
+        });
+    });
+
+    describe('updateUserRole', () => {
+        it('should delegate to usersService.updateRole when admin role is present', async () => {
+            const req = { user: { appRoles: ['admin'] } };
+            usersService.updateRole.mockResolvedValue({ id: '1', role: 'seller' });
+
+            const result = await controller.updateUserRole(
+                '1',
+                { role: 'seller' },
+                req,
+            );
+            expect(result).toEqual({ id: '1', role: 'seller' });
+            expect(usersService.updateRole).toHaveBeenCalledWith('1', 'seller');
+        });
+
+        it('should throw ForbiddenException when appRoles is not an array', async () => {
+            const req = { user: { appRoles: 'admin' } };
+            await expect(
+                controller.updateUserRole('1', { role: 'seller' }, req),
+            ).rejects.toThrow(ForbiddenException);
         });
     });
 

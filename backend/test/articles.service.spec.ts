@@ -10,6 +10,7 @@ import { Article } from '../src/modules/articles/article.entity';
 import { PriceHistory } from '../src/modules/articles/price-history.entity';
 import { UserInterest } from '../src/modules/users/user-interest.entity';
 import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../src/modules/users/users.service';
 
 const mockRepository = {
     find: jest.fn(),
@@ -232,9 +233,15 @@ describe('ArticlesService', () => {
 
 describe('ArticlesController', () => {
     let controller: ArticlesController;
+    const mockUsersService = {
+        findOrCreate: jest.fn().mockResolvedValue({ id: 'u1' }),
+    };
     const mockService = {
         findAll: jest.fn(),
         findOne: jest.fn(),
+        findBySeller: jest.fn(),
+        findPending: jest.fn(),
+        moderateStatus: jest.fn(),
         findRecommended: jest.fn(),
         getPriceHistory: jest.fn(),
         create: jest.fn(),
@@ -245,7 +252,10 @@ describe('ArticlesController', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [ArticlesController],
-            providers: [{ provide: ArticlesService, useValue: mockService }],
+            providers: [
+                { provide: ArticlesService, useValue: mockService },
+                { provide: UsersService, useValue: mockUsersService },
+            ],
         }).compile();
 
         controller = module.get<ArticlesController>(ArticlesController);
@@ -263,9 +273,66 @@ describe('ArticlesController', () => {
         expect(mockService.findOne).toHaveBeenCalledWith('1');
     });
 
-    it('should call findRecommended', () => {
-        controller.findRecommended({ user: { sub: 'u1' } });
+    it('should call findRecommended', async () => {
+        await controller.findRecommended({
+            user: {
+                sub: 'u1',
+                email: 'u1@test.com',
+                preferred_username: 'u1',
+            },
+        });
         expect(mockService.findRecommended).toHaveBeenCalledWith('u1');
+    });
+
+    it('should call findMine', async () => {
+        mockService.findBySeller.mockResolvedValue([]);
+        await controller.findMine({
+            user: {
+                sub: 'u1',
+                email: 'u1@test.com',
+                preferred_username: 'u1',
+            },
+        });
+        expect(mockService.findBySeller).toHaveBeenCalledWith('u1');
+    });
+
+    it('should call findAdminPending when admin', async () => {
+        mockService.findPending.mockResolvedValue([]);
+        await controller.findAdminPending({
+            user: { appRoles: ['admin'] },
+        });
+        expect(mockService.findPending).toHaveBeenCalled();
+    });
+
+    it('should forbid findAdminPending when appRoles is not an array', async () => {
+        await expect(
+            controller.findAdminPending({
+                user: { appRoles: 'admin' as any },
+            }),
+        ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should forbid findAdminPending when admin role is missing', async () => {
+        await expect(
+            controller.findAdminPending({
+                user: { appRoles: ['buyer'] },
+            }),
+        ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should call moderateAdmin when admin', async () => {
+        mockService.moderateStatus.mockResolvedValue({ ok: true });
+        await controller.moderateAdmin(
+            'article-1',
+            { status: 'validated' },
+            {
+                user: { appRoles: ['admin'] },
+            },
+        );
+        expect(mockService.moderateStatus).toHaveBeenCalledWith(
+            'article-1',
+            'validated',
+        );
     });
 
     it('should call getPriceHistory', () => {
@@ -273,20 +340,38 @@ describe('ArticlesController', () => {
         expect(mockService.getPriceHistory).toHaveBeenCalledWith('1');
     });
 
-    it('should call create', () => {
+    it('should call create', async () => {
         const dto = { title: 'T', description: 'D', price: 10 } as any;
-        controller.create(dto, { user: { sub: 'u1' } });
+        await controller.create(dto, {
+            user: {
+                sub: 'u1',
+                email: 'u1@test.com',
+                preferred_username: 'u1',
+            },
+        });
         expect(mockService.create).toHaveBeenCalledWith(dto, 'u1');
     });
 
-    it('should call update', () => {
+    it('should call update', async () => {
         const dto = { title: 'Updated' } as any;
-        controller.update('1', dto, { user: { sub: 'u1' } });
+        await controller.update('1', dto, {
+            user: {
+                sub: 'u1',
+                email: 'u1@test.com',
+                preferred_username: 'u1',
+            },
+        });
         expect(mockService.update).toHaveBeenCalledWith('1', dto, 'u1');
     });
 
-    it('should call remove', () => {
-        controller.remove('1', { user: { sub: 'u1' } });
+    it('should call remove', async () => {
+        await controller.remove('1', {
+            user: {
+                sub: 'u1',
+                email: 'u1@test.com',
+                preferred_username: 'u1',
+            },
+        });
         expect(mockService.remove).toHaveBeenCalledWith('1', 'u1');
     });
 });
