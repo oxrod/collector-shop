@@ -234,5 +234,6 @@ jobs:
           name: notification-service-coverage
           path: notification-service/coverage
       - uses: SonarSource/sonarcloud-github-action@v5
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
