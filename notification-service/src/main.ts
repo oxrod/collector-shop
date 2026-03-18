@@ -188,7 +188,10 @@ export function startServer() {
     return server;
 }
 
-if (require.main === module) {
+const shouldAutoStart =
+    require.main === module || process.env.NOTIFICATION_SERVICE_AUTO_START === 'true';
+
+if (shouldAutoStart) {
     startServer();
 }
 
