@@ -79,11 +79,17 @@ jobs:
           cache-dependency-path: notification-service/package-lock.json
       - run: npm ci
       - run: npm test -- --coverage
+      - name: Normalize lcov paths (notification-service)
+        run: |
+          # SonarQube expects forward slashes in `SF:` paths.
+          # Your local/Windows-generated lcov may contain backslashes (e.g. `src\main.ts`),
+          # which can cause Sonar to treat the file as "uncovered".
+          node -e "const fs=require('fs'); const p='coverage/lcov.info'; let s=fs.readFileSync(p,'utf8'); s=s.replace(/^SF:.*$/mg, (line)=>line.replace(/\\\\/g,'/')); fs.writeFileSync(p,s);"
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
           name: notification-service-coverage
-          path: notification-service/coverage/lcov.info
+          path: coverage/lcov.info
 
   # ——— Integration (E2E) ———
   integration:
