@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Delete, Param, Body, ParseUUIDPipe, UseGuards, Request } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Delete,
+    Patch,
+    Param,
+    Body,
+    ParseUUIDPipe,
+    UseGuards,
+    Request,
+    ForbiddenException,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -7,6 +19,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
+
+    private assertAdmin(req: any) {
+        const roles = req?.user?.appRoles ?? [];
+        if (!Array.isArray(roles) || !roles.includes('admin')) {
+            throw new ForbiddenException('Admin access required');
+        }
+    }
 
     @Get('me')
     @UseGuards(JwtAuthGuard)
@@ -17,6 +36,7 @@ export class UsersController {
             req.user.sub,
             req.user.email,
             req.user.preferred_username,
+            req.user.appRoles,
         );
     }
 
@@ -48,6 +68,30 @@ export class UsersController {
     @ApiOperation({ summary: 'Obtenir un utilisateur par ID' })
     findOne(@Param('id', ParseUUIDPipe) id: string) {
         return this.usersService.findOne(id);
+    }
+
+    @Get('admin/moderation')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "Lister les utilisateurs à modérer (admin)" })
+    async getAdminModerationUsers(@Request() req: any) {
+        this.assertAdmin(req);
+        const users = await this.usersService.findAll();
+        // Simple queue for now: everything except admins
+        return users.filter((u) => u.role !== 'admin');
+    }
+
+    @Patch('admin/:id/role')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "Mettre à jour le rôle d'un utilisateur (admin)" })
+    async updateUserRole(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() body: { role: 'buyer' | 'seller' | 'admin' },
+        @Request() req: any,
+    ) {
+        this.assertAdmin(req);
+        return this.usersService.updateRole(id, body.role);
     }
 }
 

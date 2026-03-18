@@ -62,6 +62,22 @@ export default function ChatPage() {
     }
   };
 
+  const MessageSquareIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+    </svg>
+  );
+
   return (
     <div
       className="page"
@@ -84,14 +100,17 @@ export default function ChatPage() {
         }}
       >
         <Link
-          to={article ? `/articles/${article.id}` : "/"}
+          to={article ? `/articles/${article.id}` : "/articles"}
           style={{ color: "var(--text-muted)" }}
         >
           ←
         </Link>
         <div>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-            💬 {article ? `Discussion — ${article.title}` : "Chat"}
+            <span style={{ verticalAlign: "middle" }}>
+              <MessageSquareIcon />
+            </span>
+            {article ? ` Discussion — ${article.title}` : " Chat"}
           </h2>
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
             Messages actualisés automatiquement
@@ -122,7 +141,9 @@ export default function ChatPage() {
               color: "var(--text-muted)",
             }}
           >
-            <p style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>💬</p>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <MessageSquareIcon />
+            </div>
             <p>Aucun message. Commencez la conversation !</p>
           </div>
         ) : (

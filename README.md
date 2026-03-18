@@ -75,7 +75,7 @@ Les manifestes Kubernetes utilisent **Kustomize** avec trois environnements : `d
 ```powershell
 # Démarrage rapide sur Minikube
 .\infra\k8s\minikube-start.ps1 -Bootstrap
-docker build -t marketplace/backend:latest ./backend   # + autres services
+docker build -t marketplace/backend-development:latest ./backend   # + autres services
 .\infra\k8s\minikube-load-images.ps1
 kubectl apply -k infra/k8s/overlays/dev
 ```
@@ -83,10 +83,36 @@ kubectl apply -k infra/k8s/overlays/dev
 | Action | Commande |
 |--------|----------|
 | Démarrer Minikube + bootstrap | `.\infra\k8s\minikube-start.ps1 -Bootstrap` |
+| Démarrer Minikube + Argo CD | `.\infra\k8s\minikube-start.ps1 -ArgoCD` |
 | Charger images dans Minikube | `.\infra\k8s\minikube-load-images.ps1` |
 | Déployer dev | `kubectl apply -k infra/k8s/overlays/dev` |
 | Déployer staging | `kubectl apply -k infra/k8s/overlays/staging` |
 | Déployer production | `kubectl apply -k infra/k8s/overlays/production` |
+
+### GitOps local avec Argo CD (Minikube)
+
+```powershell
+# Bootstrap Argo CD + applications
+.\infra\k8s\minikube-start.ps1 -ArgoCD
+
+# Exposer l'UI Argo CD
+kubectl -n argocd port-forward svc/argocd-server 8081:443
+# https://localhost:8081
+
+# Mot de passe initial admin
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | % { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
+```
+
+Applications Argo CD:
+- `marketplace-dev` (application vers `infra/k8s/overlays/dev`)
+
+Les applications sont gerees directement via les fichiers sous `infra/k8s/argocd/apps`.
+
+Si le repository GitHub est prive, relancer le bootstrap Argo CD avec credentials :
+
+```powershell
+.\infra\k8s\minikube-argocd-bootstrap.ps1 -RepoUrl https://github.com/oxrod/collector-shop.git -RepoUsername <github-user> -RepoToken <github-pat>
+```
 
 ## Monitoring
 

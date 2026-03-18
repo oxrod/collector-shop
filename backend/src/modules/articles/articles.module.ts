@@ -5,9 +5,10 @@ import { PriceHistory } from './price-history.entity';
 import { UserInterest } from '../users/user-interest.entity';
 import { ArticlesService } from './articles.service';
 import { ArticlesController } from './articles.controller';
+import { UsersModule } from '../users/users.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Article, PriceHistory, UserInterest])],
+    imports: [TypeOrmModule.forFeature([Article, PriceHistory, UserInterest]), UsersModule],
     controllers: [ArticlesController],
     providers: [ArticlesService],
     exports: [ArticlesService],

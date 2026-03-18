@@ -69,6 +69,31 @@ export class ArticlesService {
         });
     }
 
+    async findPending(): Promise<Article[]> {
+        return this.articleRepository.find({
+            where: { status: 'pending' },
+            relations: ['seller', 'category', 'shop'],
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    async moderateStatus(
+        id: string,
+        status: 'validated' | 'rejected',
+    ): Promise<Article> {
+        const article = await this.articleRepository.findOne({
+            where: { id },
+            relations: ['seller', 'category', 'shop'],
+        });
+
+        if (!article) {
+            throw new NotFoundException(`Article ${id} not found`);
+        }
+
+        article.status = status;
+        return this.articleRepository.save(article);
+    }
+
     async getPriceHistory(articleId: string): Promise<PriceHistory[]> {
         return this.priceHistoryRepository.find({
             where: { articleId },
@@ -96,7 +121,9 @@ export class ArticlesService {
             });
 
             savedArticle.fraudScore = fraudResponse.data.score;
-            savedArticle.status = fraudResponse.data.valid ? 'validated' : 'rejected';
+            // By default, a not-validated article should remain `pending` (not `rejected`)
+            // so sellers can still manage their submissions.
+            savedArticle.status = fraudResponse.data.valid ? 'validated' : 'pending';
             await this.articleRepository.save(savedArticle);
 
             // Send notification
@@ -108,7 +135,10 @@ export class ArticlesService {
                 userId: sellerId,
                 type: 'article_published',
                 title: 'Article publié',
-                message: `Votre article "${savedArticle.title}" a été ${savedArticle.status === 'validated' ? 'validé' : 'rejeté'}.`,
+                message:
+                    savedArticle.status === 'validated'
+                        ? `Votre article "${savedArticle.title}" a été validé.`
+                        : `Votre article "${savedArticle.title}" est en attente de validation.`,
             });
         } catch (error: any) {
             console.error('Error calling fraud/notification service:', error.message);
@@ -148,7 +178,8 @@ export class ArticlesService {
                     price: savedArticle.price,
                 });
                 savedArticle.fraudScore = fraudResponse.data.score;
-                savedArticle.status = fraudResponse.data.valid ? 'validated' : 'rejected';
+                // Keep invalid submissions in `pending` state instead of marking them `rejected`.
+                savedArticle.status = fraudResponse.data.valid ? 'validated' : 'pending';
                 await this.articleRepository.save(savedArticle);
 
                 // Notify about price change

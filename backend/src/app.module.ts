@@ -12,6 +12,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ShopsModule } from './modules/shops/shops.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
     imports: [
@@ -42,6 +43,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
         ShopsModule,
         ReviewsModule,
         NotificationsModule,
+        ChatModule,
         HealthModule,
         MetricsModule,
     ],

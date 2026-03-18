@@ -16,22 +16,7 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// Auto-refresh token on 401
-api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        if (error.response?.status === 401) {
-            try {
-                await keycloak.updateToken(30);
-                error.config.headers.Authorization = `Bearer ${keycloak.token}`;
-                return api.request(error.config);
-            } catch {
-                keycloak.login();
-            }
-        }
-        return Promise.reject(error);
-    },
-);
+
 
 // ── Interfaces ──────────────────────────────────────────
 
@@ -95,6 +80,15 @@ export interface UserInterest {
     category?: Category;
 }
 
+export interface User {
+    id: string;
+    email: string;
+    username: string;
+    role: "buyer" | "seller" | "admin";
+    isActive?: boolean;
+    createdAt?: string;
+}
+
 export interface PriceHistoryEntry {
     id: string;
     articleId: string;
@@ -119,7 +113,12 @@ export function articleImageUrl(article: Article): string {
     if (article.photoUrls && article.photoUrls.length > 0) {
         return article.photoUrls[0];
     }
-    return `https://picsum.photos/seed/${article.id}/400/300`;
+
+    // If the seller did not provide photos, use placehold.co dynamic placeholder.
+    // Using the article title helps debugging and makes the UI less “empty”.
+    const title = (article.title ?? "No photo").toString().slice(0, 24).trim();
+    const textParam = encodeURIComponent(title).replace(/%20/g, "+");
+    return `https://placehold.co/600x400/png?text=${textParam}&font=roboto`;
 }
 
 // ── API wrappers ────────────────────────────────────────
@@ -127,6 +126,7 @@ export function articleImageUrl(article: Article): string {
 export const articlesApi = {
     getAll: () => api.get<Article[]>('/articles').then((r) => r.data),
     getOne: (id: string) => api.get<Article>(`/articles/${id}`).then((r) => r.data),
+    getMine: () => api.get<Article[]>('/articles/mine').then((r) => r.data),
     getRecommended: () => api.get<Article[]>('/articles/recommended').then((r) => r.data),
     getPriceHistory: (id: string) =>
         api.get<PriceHistoryEntry[]>(`/articles/${id}/price-history`).then((r) => r.data),
@@ -187,11 +187,29 @@ export const usersApi = {
         api.delete(`/users/me/interests/${categoryId}`),
 };
 
+export const adminArticlesApi = {
+    getPending: () => api.get<Article[]>('/articles/admin/pending').then((r) => r.data),
+    moderate: (id: string, status: 'validated' | 'rejected') =>
+        api.patch<Article>(`/articles/admin/${id}/moderate`, { status }).then((r) => r.data),
+};
+
+export const adminUsersApi = {
+    getModerationQueue: () =>
+        api.get<User[]>('/users/admin/moderation').then((r) => r.data),
+    updateRole: (id: string, role: 'buyer' | 'seller' | 'admin') =>
+        api.patch<User>(`/users/admin/${id}/role`, { role }).then((r) => r.data),
+};
+
 export const chatApi = {
     getMessages: (articleId: string) =>
         api.get<ChatMessage[]>(`/chat/${articleId}`).then((r) => r.data),
     sendMessage: (articleId: string, receiverId: string, content: string) =>
         api.post<ChatMessage>(`/chat/${articleId}`, { receiverId, content }).then((r) => r.data),
+};
+
+export const authApi = {
+    register: (data: { email: string; username: string; password?: string }) =>
+        api.post('/auth/register', data).then((r) => r.data),
 };
 
 export default api;

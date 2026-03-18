@@ -46,6 +46,11 @@ infra/k8s/
   minikube-start.ps1                 # Script de demarrage Minikube
   minikube-bootstrap.ps1             # Creation des secrets et ConfigMap
   minikube-load-images.ps1           # Chargement des images dans Minikube
+  minikube-argocd-bootstrap.ps1      # Installation Argo CD + applications
+  argocd/
+    project.yaml                     # Argo CD AppProject (scope local)
+    apps/
+      dev.yaml                       # Application vers overlays/dev
 ```
 
 ### Comparaison des environnements
@@ -96,11 +101,11 @@ Les deployments utilisent `imagePullPolicy: Never` en dev : les images doivent e
 
 ```powershell
 # Construire toutes les images
-docker build -t marketplace/backend:latest ./backend
-docker build -t marketplace/frontend:latest ./frontend
-docker build -t marketplace/fraud-service:latest ./fraud-service
-docker build -t marketplace/notification-service:latest ./notification-service
-docker build -t marketplace/keycloak:latest ./auth
+docker build -t marketplace/backend-development:latest ./backend
+docker build -t marketplace/frontend-development:latest ./frontend
+docker build -t marketplace/fraud-service-development:latest ./fraud-service
+docker build -t marketplace/notification-service-development:latest ./notification-service
+docker build -t marketplace/keycloak-development:latest ./auth
 
 # Charger dans Minikube
 .\infra\k8s\minikube-load-images.ps1
@@ -123,6 +128,47 @@ Pour visualiser les manifestes generes sans les appliquer :
 ```powershell
 kubectl kustomize infra/k8s/overlays/dev
 ```
+
+### Alternative : deploiement GitOps avec Argo CD (multi-app)
+
+Si vous preferez que le cluster se reconcilie automatiquement a partir de Git :
+
+```powershell
+# Demarrer Minikube puis installer Argo CD et les apps
+.\infra\k8s\minikube-start.ps1 -ArgoCD
+
+# Ou uniquement la partie Argo CD si Minikube est deja lance
+.\infra\k8s\minikube-argocd-bootstrap.ps1
+```
+
+Acces Argo CD :
+
+```powershell
+# UI Argo CD
+kubectl -n argocd port-forward svc/argocd-server 8081:443
+# Ouvrir https://localhost:8081
+
+# Mot de passe initial admin
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | % { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_)) }
+```
+
+Si le repository est prive, enregistrer les credentials Git dans Argo CD :
+
+```powershell
+.\infra\k8s\minikube-argocd-bootstrap.ps1 -RepoUrl https://github.com/oxrod/collector-shop.git -RepoUsername <github-user> -RepoToken <github-pat>
+```
+
+Verification rapide :
+
+```powershell
+kubectl -n argocd get applications
+kubectl -n argocd describe application marketplace-dev
+```
+
+Workflow quotidien :
+1. Modifier les manifestes sous `infra/k8s/overlays/dev` (ou `infra/k8s/base`).
+2. Commit/push.
+3. Argo CD synchronise automatiquement (`prune` + `selfHeal`).
 
 ### 4. Verifier le deploiement
 
@@ -273,11 +319,11 @@ Specificites production :
 
 | Service | Image | Port | Health check |
 |---------|-------|------|-------------|
-| **Backend** | `marketplace/backend:latest` | 3001 | `/api/health` |
-| **Frontend** | `marketplace/frontend:latest` | 80 | - |
-| **Fraud Service** | `marketplace/fraud-service:latest` | 3002 | `/health` |
-| **Notification Service** | `marketplace/notification-service:latest` | 3003 | `/health` |
-| **Keycloak** | `marketplace/keycloak:latest` | 8080 | `/realms/master` |
+| **Backend** | `marketplace/backend-development:latest` | 3001 | `/api/health` |
+| **Frontend** | `marketplace/frontend-development:latest` | 80 | - |
+| **Fraud Service** | `marketplace/fraud-service-development:latest` | 3002 | `/health` |
+| **Notification Service** | `marketplace/notification-service-development:latest` | 3003 | `/health` |
+| **Keycloak** | `marketplace/keycloak-development:latest` | 8080 | `/realms/master` |
 | **PostgreSQL** | `postgres:16-alpine` | 5432 | - |
 | **Prometheus** | `prom/prometheus:latest` | 9090 | - |
 
@@ -308,3 +354,5 @@ En dev, le script `minikube-bootstrap.ps1` les cree automatiquement avec des val
 | Ingress ne repond pas (Windows) | Tunnel non demarre | Lancer `minikube tunnel` dans un PowerShell admin |
 | Ingress ne repond pas (DNS) | Fichier hosts pas a jour | Ajouter `127.0.0.1  marketplace.local` dans `hosts` |
 | Pod prometheus en `ContainerCreating` | ConfigMap `prometheus-config` manquant | Creer le ConfigMap ou ignorer (monitoring optionnel) |
+| Argo CD app `OutOfSync` | Changement non applique ou source Git differente | `kubectl -n argocd describe application marketplace-dev` puis verifier `repoURL/path/targetRevision` |
+| Argo CD UI inaccessible | Port-forward non lance | `kubectl -n argocd port-forward svc/argocd-server 8081:443` puis ouvrir `https://localhost:8081` |

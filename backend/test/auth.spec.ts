@@ -19,15 +19,36 @@ describe('JwtAuthGuard', () => {
 });
 
 describe('KeycloakStrategy', () => {
-    it('should validate payload and return user object', async () => {
-        const payload = { sub: 'user-123', email: 'test@test.com', preferred_username: 'testuser', realm_access: { roles: ['buyer'] } };
+    it('should validate payload and return user object with mapped roles', async () => {
+        const payload = {
+            sub: 'user-123',
+            email: 'test@test.com',
+            preferred_username: 'testuser',
+            realm_access: { roles: ['buyer'] },
+        };
         const result = await KeycloakStrategy.prototype.validate.call({}, payload);
-        expect(result).toEqual({ sub: 'user-123', email: 'test@test.com', preferred_username: 'testuser', roles: ['buyer'] });
+        expect(result).toEqual({
+            sub: 'user-123',
+            email: 'test@test.com',
+            preferred_username: 'testuser',
+            realmRoles: ['buyer'],
+            appRoles: ['buyer'],
+        });
     });
 
     it('should return empty roles when realm_access is missing', async () => {
-        const payload = { sub: 'user-456', email: 'test2@test.com', preferred_username: 'testuser2' };
+        const payload = {
+            sub: 'user-456',
+            email: 'test2@test.com',
+            preferred_username: 'testuser2',
+        };
         const result = await KeycloakStrategy.prototype.validate.call({}, payload);
-        expect(result).toEqual({ sub: 'user-456', email: 'test2@test.com', preferred_username: 'testuser2', roles: [] });
+        expect(result).toEqual({
+            sub: 'user-456',
+            email: 'test2@test.com',
+            preferred_username: 'testuser2',
+            realmRoles: [],
+            appRoles: [],
+        });
     });
 });

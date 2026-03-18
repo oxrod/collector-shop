@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: marketplace-dev
+  namespace: argocd
+spec:
+  project: marketplace-local
+  source:
+    repoURL: https://github.com/oxrod/collector-shop.git
+    targetRevision: dev
+    path: infra/k8s/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

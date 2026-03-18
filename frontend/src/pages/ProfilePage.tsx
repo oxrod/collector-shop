@@ -33,6 +33,45 @@ export default function ProfilePage() {
   const myArticles = articles.filter((a) => a.seller?.username === username);
   const interestIds = new Set(interests.map((i) => i.categoryId));
 
+  const TargetIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 7v1" />
+      <path d="M12 16v1" />
+      <path d="M7 12h1" />
+      <path d="M16 12h1" />
+    </svg>
+  );
+
+  const BoxIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <path d="M3.3 7l8.7 5 8.7-5" />
+      <path d="M12 22V12" />
+    </svg>
+  );
+
   const toggleInterest = async (catId: string) => {
     if (interestIds.has(catId)) {
       await usersApi.removeInterest(catId);
@@ -92,7 +131,10 @@ export default function ProfilePage() {
           marginBottom: "1rem",
         }}
       >
-        🎯 Centres d'intérêt
+        <span style={{ verticalAlign: "middle" }}>
+          <TargetIcon />
+        </span>{" "}
+        Centres d'intérêt
       </h2>
       <p
         style={{
@@ -137,14 +179,17 @@ export default function ProfilePage() {
         }}
       >
         <h2 style={{ fontSize: "1.3rem", fontWeight: 700 }}>
-          📦 Mes articles ({myArticles.length})
+          <span style={{ verticalAlign: "middle" }}>
+            <BoxIcon />
+          </span>{" "}
+          Mes articles ({myArticles.length})
         </h2>
         <Link
           to="/publish"
           className="btn btn-primary"
           style={{ fontSize: "0.85rem" }}
         >
-          + Publier
+          Gérer mes annonces
         </Link>
       </div>
 

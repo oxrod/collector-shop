@@ -56,7 +56,11 @@ export default function ShopPage() {
     return (
       <div className="page" style={{ textAlign: "center" }}>
         <h2>Boutique introuvable</h2>
-        <Link to="/" className="btn btn-primary" style={{ marginTop: "1rem" }}>
+        <Link
+          to="/articles"
+          className="btn btn-primary"
+          style={{ marginTop: "1rem" }}
+        >
           Retour aux articles
         </Link>
       </div>
@@ -64,10 +68,47 @@ export default function ShopPage() {
 
   const shopArticles = articles.filter((a) => a.shopId === id);
 
+  const StoreIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 9l1-3h16l1 3" />
+      <path d="M5 9v12h14V9" />
+      <path d="M9 21v-8h6v8" />
+    </svg>
+  );
+
+  const DocIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h8" />
+      <path d="M8 17h8" />
+    </svg>
+  );
+
   return (
     <div className="page">
       <Link
-        to="/"
+        to="/articles"
         style={{
           color: "var(--text-muted)",
           marginBottom: "1rem",
@@ -94,7 +135,10 @@ export default function ShopPage() {
                   marginBottom: "0.5rem",
                 }}
               >
-                🏪 {shop.name}
+                <span style={{ verticalAlign: "middle" }}>
+                  <StoreIcon />
+                </span>{" "}
+                {shop.name}
               </h1>
               {shop.description && (
                 <p style={{ color: "var(--text-muted)" }}>{shop.description}</p>
@@ -177,7 +221,10 @@ export default function ShopPage() {
               margin: "2rem 0 1rem",
             }}
           >
-            📝 Avis clients
+            <span style={{ verticalAlign: "middle" }}>
+              <DocIcon />
+            </span>{" "}
+            Avis clients
           </h2>
           <div
             style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}

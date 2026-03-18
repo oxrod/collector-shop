@@ -8,6 +8,24 @@ resources:
   - hpa.yaml
   - network-policies.yaml
 
+images:
+  # Production images (no environment suffix).
+  - name: marketplace/backend
+    newName: ghcr.io/oxrod/collector-shop/backend
+    newTag: latest
+  - name: marketplace/frontend
+    newName: ghcr.io/oxrod/collector-shop/frontend
+    newTag: latest
+  - name: marketplace/fraud-service
+    newName: ghcr.io/oxrod/collector-shop/fraud-service
+    newTag: latest
+  - name: marketplace/notification-service
+    newName: ghcr.io/oxrod/collector-shop/notification-service
+    newTag: latest
+  - name: marketplace/keycloak
+    newName: ghcr.io/oxrod/collector-shop/keycloak
+    newTag: latest
+
 # Production secrets: use secretGenerator with env files or an external
 # secret manager (e.g. Sealed Secrets, SOPS, Vault). The literals below
 # are placeholders -- replace them before deploying to a real cluster.
@@ -30,7 +48,7 @@ patches:
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
-        value: IfNotPresent
+        value: Always
   - target:
       kind: Deployment
       name: backend

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: marketplace-staging
+  namespace: argocd
+spec:
+  project: marketplace-local
+  source:
+    repoURL: https://github.com/oxrod/collector-shop.git
+    targetRevision: staging
+    path: infra/k8s/overlays/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

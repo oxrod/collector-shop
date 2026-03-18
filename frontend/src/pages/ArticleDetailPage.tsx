@@ -60,17 +60,73 @@ export default function ArticleDetailPage() {
     return (
       <div className="page" style={{ textAlign: "center" }}>
         <h2>Article introuvable</h2>
-        <Link to="/" className="btn btn-primary" style={{ marginTop: "1rem" }}>
+        <Link
+          to="/articles"
+          className="btn btn-primary"
+          style={{ marginTop: "1rem" }}
+        >
           Retour aux articles
         </Link>
       </div>
     );
   }
 
+  const ChartIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 3v18h18" />
+      <path d="M7 14l2-2 3 3 6-7" />
+    </svg>
+  );
+
+  const MessageIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+    </svg>
+  );
+
+  const DocIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h8" />
+      <path d="M8 17h8" />
+    </svg>
+  );
+
   return (
     <div className="page">
       <Link
-        to="/"
+        to="/articles"
         style={{
           color: "var(--text-muted)",
           marginBottom: "1rem",
@@ -157,7 +213,10 @@ export default function ArticleDetailPage() {
                   marginBottom: "0.75rem",
                 }}
               >
-                📈 Historique des prix
+                <span style={{ verticalAlign: "middle" }}>
+                  <ChartIcon />
+                </span>{" "}
+                Historique des prix
               </h3>
               <div
                 style={{
@@ -265,7 +324,10 @@ export default function ArticleDetailPage() {
                 className="btn btn-outline"
                 style={{ padding: "1rem", fontSize: "1.1rem" }}
               >
-                💬 Contacter le vendeur
+                <span style={{ verticalAlign: "middle" }}>
+                  <MessageIcon />
+                </span>{" "}
+                Contacter le vendeur
               </Link>
             )}
           </div>
@@ -282,7 +344,10 @@ export default function ArticleDetailPage() {
               marginBottom: "1rem",
             }}
           >
-            📝 Avis sur ce vendeur
+            <span style={{ verticalAlign: "middle" }}>
+              <DocIcon />
+            </span>{" "}
+            Avis sur ce vendeur
           </h2>
           <div
             style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}

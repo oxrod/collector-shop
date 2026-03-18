@@ -6,6 +6,25 @@ namespace: default
 resources:
   - ../../base
 
+images:
+  # Dev images are environment-isolated to avoid overwriting prod/staging tags
+  # in the same Minikube Docker daemon.
+  - name: marketplace/backend
+    newName: ghcr.io/oxrod/collector-shop/backend-development
+    newTag: latest
+  - name: marketplace/frontend
+    newName: ghcr.io/oxrod/collector-shop/frontend-development
+    newTag: latest
+  - name: marketplace/fraud-service
+    newName: ghcr.io/oxrod/collector-shop/fraud-service-development
+    newTag: latest
+  - name: marketplace/notification-service
+    newName: ghcr.io/oxrod/collector-shop/notification-service-development
+    newTag: latest
+  - name: marketplace/keycloak
+    newName: ghcr.io/oxrod/collector-shop/keycloak-development
+    newTag: latest
+
 secretGenerator:
   - name: db-credentials
     literals:
@@ -25,7 +44,7 @@ patches:
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
-        value: Never
+        value: Always
   - target:
       kind: Deployment
     patch: |-

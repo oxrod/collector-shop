@@ -10,13 +10,15 @@ async function bootstrap() {
 
     // Security
     app.use(helmet());
-    app.use(
-        rateLimit({
-            windowMs: 15 * 60 * 1000, // 15 minutes
-            max: 100,
-            message: 'Too many requests from this IP, please try again later.',
-        }),
-    );
+    if (process.env.NODE_ENV === 'production') {
+        app.use(
+            rateLimit({
+                windowMs: 15 * 60 * 1000, // 15 minutes
+                max: 100,
+                message: 'Too many requests from this IP, please try again later.',
+            }),
+        );
+    }
 
     // CORS
     app.enableCors({

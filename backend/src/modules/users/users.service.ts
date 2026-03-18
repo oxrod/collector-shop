@@ -29,17 +29,44 @@ export class UsersService {
         return this.userRepository.findOne({ where: { keycloakId } });
     }
 
-    async findOrCreate(keycloakId: string, email: string, username: string): Promise<User> {
+    async findOrCreate(
+        keycloakId: string,
+        email: string,
+        username: string,
+        kcRoles?: ('admin' | 'seller' | 'buyer')[],
+    ): Promise<User> {
         let user = await this.findByKeycloakId(keycloakId);
+
+        if (!user) {
+            user = await this.userRepository.findOne({ where: { email } });
+            if (user) {
+                user.keycloakId = keycloakId;
+                user = await this.userRepository.save(user);
+            }
+        }
+
         if (!user) {
             user = this.userRepository.create({
                 keycloakId,
                 email,
                 username,
-                role: 'buyer',
+                role: 'admin',
             });
             user = await this.userRepository.save(user);
         }
+
+        if (kcRoles && kcRoles.length > 0) {
+            const bestRole = kcRoles.includes('admin')
+                ? 'admin'
+                : kcRoles.includes('seller')
+                    ? 'seller'
+                    : 'buyer';
+            if (user.role !== bestRole) {
+                user.role = bestRole;
+                user = await this.userRepository.save(user);
+            }
+        }
+
         return user;
     }
 

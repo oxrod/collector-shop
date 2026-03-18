@@ -1,12 +1,18 @@
-import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
+import dotenv from 'dotenv';
+import express, { NextFunction, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
-import { collectDefaultMetrics, Registry, Counter, Histogram } from 'prom-client';
+import helmet from 'helmet';
+import { collectDefaultMetrics, Counter, Histogram, Registry } from 'prom-client';
 import { EmailChannel } from './channels/email';
 
+// Load local environment variables from `notification-service/.env`.
+// This is useful for running `npm run dev` directly (docker-compose already injects env vars).
+dotenv.config();
+
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = parseInt(process.env.PORT || "3000", 10);
+const HOST = process.env.HOST || "0.0.0.0";
 
 // ——— Prometheus Metrics ———
 const register = new Registry();
@@ -152,9 +158,32 @@ app.get('/types', (_req, res) => {
 });
 
 if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`📧 Notification Service running on http://localhost:${PORT}`);
+    const server = app.listen(PORT, HOST, () => {
+        console.log(`📧 Notification Service running on http://${HOST}:${PORT}`);
     });
+
+    server.on("error", (err: any) => {
+        if (err?.code === "EADDRINUSE") {
+            console.error(
+                `❌ Notification service failed to start: port ${PORT} is already in use.\n` +
+                    `Stop the other process using this port, or start this service with a different PORT env var (example: PORT=3334 npm run dev).`,
+            );
+            process.exit(1);
+        }
+
+        // Re-throw unexpected startup errors
+        throw err;
+    });
+
+    const shutdown = (signal: string) => {
+        console.log(`🔻 Notification service shutting down (${signal})...`);
+        server.close(() => {
+            process.exit(0);
+        });
+    };
+
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 export default app;

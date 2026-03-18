@@ -29,7 +29,7 @@ fi
 
 echo ""
 echo "Minikube is ready."
-echo "  - Build images inside Minikube: eval \$(minikube docker-env)"
-echo "  - Then: docker build -t marketplace/backend:latest ./backend  (and other services)"
+echo "  - Images are pulled from GHCR by Kubernetes (no Minikube image load needed)"
+echo "  - If you run offline/manual mode, you can still use minikube-load-images.sh"
 echo "  - Apply manifests: kubectl apply -f infra/k8s/"
 echo "  - Dashboard: minikube dashboard"

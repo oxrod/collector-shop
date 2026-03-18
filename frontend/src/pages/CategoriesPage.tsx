@@ -28,6 +28,23 @@ export default function CategoriesPage() {
   const selectedName =
     categories.find((c) => c.id === selectedId)?.name || "Toutes";
 
+  const TagIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20.6 13.4 11 3H3v8l9.6 9.6a2 2 0 0 0 2.8 0l4.2-4.2a2 2 0 0 0 0-2.8z" />
+      <path d="M7.5 7.5h.01" />
+    </svg>
+  );
+
   if (loading)
     return (
       <div className="loading">
@@ -37,7 +54,12 @@ export default function CategoriesPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">🏷️ Catégories</h1>
+      <h1 className="page-title">
+        <span style={{ verticalAlign: "middle" }}>
+          <TagIcon />
+        </span>{" "}
+        Catégories
+      </h1>
 
       <div
         style={{
