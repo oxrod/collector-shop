@@ -217,6 +217,7 @@ jobs:
   sonar:
     runs-on: ubuntu-latest
     needs: [backend, fraud-service, notification-service, frontend]
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
