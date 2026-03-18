@@ -67,3 +67,12 @@ patches:
       - op: replace
         path: /spec/rules/0/host
         value: staging.marketplace.local
+  - target:
+      kind: Deployment
+      name: keycloak
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: KC_HOSTNAME
+          value: "staging.marketplace.local"

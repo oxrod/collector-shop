@@ -41,9 +41,17 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: password
+            - name: KC_PROXY_HEADERS
+              value: "xforwarded"
+            # The app is exposed via ingress at "/auth". Keep Keycloak's internal
+            # context path aligned so redirects generate the right URLs.
+            - name: KC_HTTP_RELATIVE_PATH
+              value: "/auth"
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
           readinessProbe:
             httpGet:
-              path: /realms/master
+              path: /auth/realms/master
               port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10

@@ -80,6 +80,15 @@ patches:
             secretName: marketplace-tls
   - target:
       kind: Deployment
+      name: keycloak
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: KC_HOSTNAME
+          value: "marketplace.example.com"
+  - target:
+      kind: Deployment
       name: backend
     patch: |-
       - op: replace
