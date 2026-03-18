@@ -17,9 +17,7 @@ jobs:
       github.event_name == 'push' ||
       github.event.workflow_run.conclusion == 'success'
     env:
-      # Repo name carries the environment suffix.
-      # master => production (no suffix), dev => development (-development), staging => staging (-staging)
-      ENV_SUFFIX: ${{ github.event.workflow_run.head_branch == 'dev' && '-development' || github.event.workflow_run.head_branch == 'staging' && '-staging' || '' }}
+      ENV_SUFFIX: ${{ github.event.workflow_run.head_branch == 'dev' && '-dev' || github.event.workflow_run.head_branch == 'staging' && '-staging' || '-prod' }}
     strategy:
       matrix:
         include:

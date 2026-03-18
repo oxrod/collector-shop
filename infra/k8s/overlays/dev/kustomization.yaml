@@ -7,22 +7,20 @@ resources:
   - ../../base
 
 images:
-  # Dev images are environment-isolated to avoid overwriting prod/staging tags
-  # in the same Minikube Docker daemon.
   - name: marketplace/backend
-    newName: ghcr.io/oxrod/collector-shop/backend-development
+    newName: ghcr.io/oxrod/collector-shop/backend-dev
     newTag: latest
   - name: marketplace/frontend
-    newName: ghcr.io/oxrod/collector-shop/frontend-development
+    newName: ghcr.io/oxrod/collector-shop/frontend-dev
     newTag: latest
   - name: marketplace/fraud-service
-    newName: ghcr.io/oxrod/collector-shop/fraud-service-development
+    newName: ghcr.io/oxrod/collector-shop/fraud-service-dev
     newTag: latest
   - name: marketplace/notification-service
-    newName: ghcr.io/oxrod/collector-shop/notification-service-development
+    newName: ghcr.io/oxrod/collector-shop/notification-service-dev
     newTag: latest
   - name: marketplace/keycloak
-    newName: ghcr.io/oxrod/collector-shop/keycloak-development
+    newName: ghcr.io/oxrod/collector-shop/keycloak-dev
     newTag: latest
 
 secretGenerator:

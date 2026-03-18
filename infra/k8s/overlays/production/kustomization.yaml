@@ -9,21 +9,20 @@ resources:
   - network-policies.yaml
 
 images:
-  # Production images (no environment suffix).
   - name: marketplace/backend
-    newName: ghcr.io/oxrod/collector-shop/backend
+    newName: ghcr.io/oxrod/collector-shop/backend-prod
     newTag: latest
   - name: marketplace/frontend
-    newName: ghcr.io/oxrod/collector-shop/frontend
+    newName: ghcr.io/oxrod/collector-shop/frontend-prod
     newTag: latest
   - name: marketplace/fraud-service
-    newName: ghcr.io/oxrod/collector-shop/fraud-service
+    newName: ghcr.io/oxrod/collector-shop/fraud-service-prod
     newTag: latest
   - name: marketplace/notification-service
-    newName: ghcr.io/oxrod/collector-shop/notification-service
+    newName: ghcr.io/oxrod/collector-shop/notification-service-prod
     newTag: latest
   - name: marketplace/keycloak
-    newName: ghcr.io/oxrod/collector-shop/keycloak
+    newName: ghcr.io/oxrod/collector-shop/keycloak-prod
     newTag: latest
 
 # Production secrets: use secretGenerator with env files or an external
