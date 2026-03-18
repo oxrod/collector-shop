@@ -77,6 +77,23 @@ jobs:
       - name: Enable ingress addon
         run: minikube addons enable ingress
 
+      - name: Wait for ingress controller readiness
+        run: |
+          echo "Waiting for ingress-nginx controller pod..."
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=120s
+          echo "Waiting for admission webhook endpoint..."
+          for i in $(seq 1 30); do
+            if kubectl get endpoints ingress-nginx-controller-admission -n ingress-nginx -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q .; then
+              echo "Admission webhook is ready"
+              break
+            fi
+            echo "  attempt $i/30 – not ready yet"
+            sleep 4
+          done
+
       - name: Deploy staging overlay
         run: |
           kubectl create namespace staging --dry-run=client -o yaml | kubectl apply -f -
@@ -149,6 +166,23 @@ jobs:
 
       - name: Enable ingress addon
         run: minikube addons enable ingress
+
+      - name: Wait for ingress controller readiness
+        run: |
+          echo "Waiting for ingress-nginx controller pod..."
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=120s
+          echo "Waiting for admission webhook endpoint..."
+          for i in $(seq 1 30); do
+            if kubectl get endpoints ingress-nginx-controller-admission -n ingress-nginx -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q .; then
+              echo "Admission webhook is ready"
+              break
+            fi
+            echo "  attempt $i/30 – not ready yet"
+            sleep 4
+          done
 
       - name: Deploy production overlay
         run: |
@@ -224,6 +258,23 @@ jobs:
 
       - name: Enable ingress addon
         run: minikube addons enable ingress
+
+      - name: Wait for ingress controller readiness
+        run: |
+          echo "Waiting for ingress-nginx controller pod..."
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=120s
+          echo "Waiting for admission webhook endpoint..."
+          for i in $(seq 1 30); do
+            if kubectl get endpoints ingress-nginx-controller-admission -n ingress-nginx -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q .; then
+              echo "Admission webhook is ready"
+              break
+            fi
+            echo "  attempt $i/30 – not ready yet"
+            sleep 4
+          done
 
       - name: Deploy dev overlay
         run: |
