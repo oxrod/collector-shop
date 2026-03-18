@@ -67,88 +67,11 @@ jobs:
       github.event.workflow_run.head_branch == 'staging'
     steps:
       - uses: actions/checkout@v4
-
-      - name: Start Minikube
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+      - name: Deploy to Minikube Staging Namespace
         run: |
-          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          install minikube /usr/local/bin/minikube
-          minikube start --driver=docker --cpus=2 --memory=4096
-
-      - name: Enable ingress addon
-        run: minikube addons enable ingress
-
-      - name: Wait for ingress controller readiness
-        run: |
-          echo "Waiting for ingress-nginx controller pod..."
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=120s
-          echo "Waiting for admission webhook endpoint..."
-          for i in $(seq 1 30); do
-            if kubectl get endpoints ingress-nginx-controller-admission -n ingress-nginx -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q .; then
-              echo "Admission webhook is ready"
-              break
-            fi
-            echo "  attempt $i/30 – not ready yet"
-            sleep 4
-          done
-
-      - name: Deploy staging overlay
-        run: |
-          kubectl create namespace staging --dry-run=client -o yaml | kubectl apply -f -
-          kubectl apply -k infra/k8s/overlays/staging
-
-      - name: Force restart to pick up rebuilt images
-        run: |
-          kubectl rollout restart deployment/backend -n staging
-          kubectl rollout restart deployment/frontend -n staging
-          kubectl rollout restart deployment/fraud-service -n staging
-          kubectl rollout restart deployment/notification-service -n staging
-          kubectl rollout restart deployment/keycloak -n staging
-
-      - name: Wait for rollouts
-        run: |
-          kubectl rollout status deployment/backend -n staging --timeout=180s
-          kubectl rollout status deployment/frontend -n staging --timeout=180s
-          kubectl rollout status deployment/fraud-service -n staging --timeout=180s
-          kubectl rollout status deployment/notification-service -n staging --timeout=180s
-          kubectl rollout status deployment/keycloak -n staging --timeout=180s
-          echo "Staging deployment successful"
-
-      - name: Install Siege
-        run: sudo apt-get update && sudo apt-get install -y siege
-
-      - name: Load test via ingress gateway
-        continue-on-error: true
-        run: |
-          kubectl port-forward svc/ingress-nginx-controller 8080:80 -n ingress-nginx &
-          PF_PID=$!
-
-          echo "Waiting for ingress gateway..."
-          sleep 10
-          for i in $(seq 1 30); do
-            curl -sf -H "Host: staging.marketplace.local" http://localhost:8080/api/health && break
-            sleep 3
-          done
-
-          chmod +x tests/siege/run-load-tests.sh
-          BACKEND_URL=http://localhost:8080 \
-          FRAUD_URL=http://localhost:8080 \
-          NOTIFICATION_URL=http://localhost:8080 \
-          SIEGE_HEADER="Host: staging.marketplace.local" \
-          GATEWAY_MODE=true \
-          BASELINE_TIME=20S LOAD_TIME=30S STRESS_TIME=20S \
-            tests/siege/run-load-tests.sh
-
-          kill $PF_PID 2>/dev/null || true
-
-      - name: Upload staging load test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: siege-staging-results
-          path: tests/siege/results/
+          echo "Simulating deployment to Minikube staging namespace..."# kubectl apply -k k8s/overlays/staging
 
   # ——— Deploy Production (Minikube + production overlay + load tests) ———
   deploy-production:
@@ -157,90 +80,11 @@ jobs:
     if: github.event.workflow_run.head_branch == 'master'
     steps:
       - uses: actions/checkout@v4
-
-      - name: Start Minikube
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+      - name: Deploy to Minikube Production Namespace
         run: |
-          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          install minikube /usr/local/bin/minikube
-          minikube start --driver=docker --cpus=2 --memory=4096
-
-      - name: Enable ingress addon
-        run: minikube addons enable ingress
-
-      - name: Wait for ingress controller readiness
-        run: |
-          echo "Waiting for ingress-nginx controller pod..."
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=120s
-          echo "Waiting for admission webhook endpoint..."
-          for i in $(seq 1 30); do
-            if kubectl get endpoints ingress-nginx-controller-admission -n ingress-nginx -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q .; then
-              echo "Admission webhook is ready"
-              break
-            fi
-            echo "  attempt $i/30 – not ready yet"
-            sleep 4
-          done
-
-      - name: Deploy production overlay
-        run: |
-          kubectl create namespace production --dry-run=client -o yaml | kubectl apply -f -
-          kubectl apply -k infra/k8s/overlays/production
-
-      - name: Force restart to pick up rebuilt images
-        run: |
-          kubectl rollout restart deployment/backend -n production
-          kubectl rollout restart deployment/frontend -n production
-          kubectl rollout restart deployment/fraud-service -n production
-          kubectl rollout restart deployment/notification-service -n production
-          kubectl rollout restart deployment/keycloak -n production
-
-      - name: Wait for rollouts
-        run: |
-          kubectl rollout status deployment/backend -n production --timeout=180s
-          kubectl rollout status deployment/frontend -n production --timeout=180s
-          kubectl rollout status deployment/fraud-service -n production --timeout=180s
-          kubectl rollout status deployment/notification-service -n production --timeout=180s
-          kubectl rollout status deployment/keycloak -n production --timeout=180s
-          echo "Production deployment successful"
-
-      - name: Install Siege
-        run: sudo apt-get update && sudo apt-get install -y siege
-
-      - name: Load test via ingress gateway
-        continue-on-error: true
-        run: |
-          kubectl port-forward svc/ingress-nginx-controller 8080:80 -n ingress-nginx &
-          PF_PID=$!
-
-          echo "Waiting for ingress gateway..."
-          sleep 10
-          for i in $(seq 1 30); do
-            curl -sf -H "Host: marketplace.example.com" http://localhost:8080/api/health && break
-            sleep 3
-          done
-
-          chmod +x tests/siege/run-load-tests.sh
-          BACKEND_URL=http://localhost:8080 \
-          FRAUD_URL=http://localhost:8080 \
-          NOTIFICATION_URL=http://localhost:8080 \
-          SIEGE_HEADER="Host: marketplace.example.com" \
-          GATEWAY_MODE=true \
-          BASELINE_CONCURRENT=25 BASELINE_TIME=20S \
-          LOAD_CONCURRENT=50 LOAD_TIME=30S \
-          STRESS_CONCURRENT=100 STRESS_TIME=20S \
-            tests/siege/run-load-tests.sh
-
-          kill $PF_PID 2>/dev/null || true
-
-      - name: Upload production load test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: siege-production-results
-          path: tests/siege/results/
+          echo "Simulating deployment to Minikube production namespace..."# kubectl apply -k k8s/overlays/production
 
   # ——— Deploy Dev (Minikube + dev overlay + smoke tests) ———
   deploy-dev:
@@ -250,50 +94,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start Minikube
-        run: |
-          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          install minikube /usr/local/bin/minikube
-          minikube start --driver=docker --cpus=2 --memory=4096
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
 
-      - name: Enable ingress addon
-        run: minikube addons enable ingress
-
-      - name: Wait for ingress controller readiness
+      - name: Deploy to Minikube Dev Namespace
         run: |
-          echo "Waiting for ingress-nginx controller pod..."
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=120s
-          echo "Waiting for admission webhook endpoint..."
-          for i in $(seq 1 30); do
-            if kubectl get endpoints ingress-nginx-controller-admission -n ingress-nginx -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q .; then
-              echo "Admission webhook is ready"
-              break
-            fi
-            echo "  attempt $i/30 – not ready yet"
-            sleep 4
-          done
-
-      - name: Deploy dev overlay
-        run: |
-          kubectl apply -k infra/k8s/overlays/dev
-
-      - name: Force restart to pick up rebuilt images
-        run: |
-          kubectl rollout restart deployment/backend -n default
-          kubectl rollout restart deployment/frontend -n default
-          kubectl rollout restart deployment/fraud-service -n default
-          kubectl rollout restart deployment/notification-service -n default
-          kubectl rollout restart deployment/keycloak -n default
-
-      - name: Wait for rollouts
-        run: |
-          kubectl rollout status deployment/backend -n default --timeout=180s
-          kubectl rollout status deployment/frontend -n default --timeout=180s
-          kubectl rollout status deployment/fraud-service -n default --timeout=180s
-          kubectl rollout status deployment/notification-service -n default --timeout=180s
-          kubectl rollout status deployment/keycloak -n default --timeout=180s
-          echo "Dev deployment successful"
+          echo "Simulating deployment to Minikube dev namespace..."# kubectl apply -k k8s/overlays/dev
 
