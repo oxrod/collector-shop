@@ -25,6 +25,9 @@ images:
   - name: marketplace/keycloak
     newName: ghcr.io/oxrod/collector-shop/keycloak-staging
     newTag: latest
+  - name: marketplace/gateway
+    newName: ghcr.io/oxrod/collector-shop/gateway-staging
+    newTag: latest
 
 secretGenerator:
   - name: db-credentials
@@ -68,9 +71,12 @@ patches:
         path: /spec/rules/0/host
         value: staging.marketplace.local
   - target:
-      kind: Deployment
+      kind: StatefulSet
       name: keycloak
     patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
       - op: add
         path: /spec/template/spec/containers/0/env/-
         value:

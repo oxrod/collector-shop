@@ -26,8 +26,8 @@ if (($RepoUsername -and -not $RepoToken) -or (-not $RepoUsername -and $RepoToken
 Write-Host "Creating namespace 'argocd' (if needed)..."
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 
-Write-Host "Installing Argo CD..."
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+Write-Host "Installing Argo CD (server-side apply to avoid CRD annotation size limit)..."
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --server-side --force-conflicts
 
 Write-Host "Waiting for Argo CD components..."
 kubectl -n argocd rollout status deployment/argocd-server --timeout=300s

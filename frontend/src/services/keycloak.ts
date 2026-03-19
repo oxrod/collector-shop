@@ -1,9 +1,8 @@
 import Keycloak from 'keycloak-js';
 
 const keycloak = new Keycloak({
-    // Build-time VITE_KEYCLOAK_URL can accidentally point to the internal
-    // service name (e.g. "http://keycloak:8080"). Prefer the current origin.
-    url: import.meta.env.VITE_KEYCLOAK_URL || `${window.location.origin}/auth`,
+    // With ingress: Keycloak at /auth. Override with VITE_KEYCLOAK_URL if needed.
+    url: import.meta.env.VITE_KEYCLOAK_URL || (typeof window !== 'undefined' ? `${window.location.origin}/auth` : ''),
     realm: import.meta.env.VITE_KEYCLOAK_REALM || 'marketplace',
     clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'marketplace-app',
 });

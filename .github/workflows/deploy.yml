@@ -31,6 +31,8 @@ jobs:
             context: notification-service
           - service: keycloak
             context: auth
+          - service: gateway
+            context: infra/k8s/base/gateway
     permissions:
       contents: read
       packages: write

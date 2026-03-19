@@ -41,7 +41,7 @@ spec:
             - name: DB_DATABASE
               value: "marketplace"
             - name: KEYCLOAK_URL
-              value: "http://keycloak:8080"
+              value: "http://keycloak:8080/auth"
             - name: KEYCLOAK_REALM
               value: "marketplace"
             - name: KEYCLOAK_CLIENT_ID
@@ -80,4 +80,3 @@ spec:
   ports:
     - port: 3001
       targetPort: 3001
-  type: ClusterIP
