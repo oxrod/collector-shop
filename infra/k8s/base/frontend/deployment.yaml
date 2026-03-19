@@ -27,35 +27,6 @@ spec:
               cpu: 200m
               memory: 128Mi
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: gateway
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: gateway
-  template:
-    metadata:
-      labels:
-        app: gateway
-    spec:
-      automountServiceAccountToken: false
-      containers:
-        - name: gateway
-          image: marketplace/gateway:latest
-          ports:
-            - containerPort: 80
-          resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-              ephemeral-storage: 256Mi
-            limits:
-              memory: 256Mi
-              ephemeral-storage: 512Mi
----
 apiVersion: v1
 kind: Service
 metadata:
