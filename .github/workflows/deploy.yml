@@ -32,7 +32,7 @@ jobs:
           - service: keycloak
             context: auth
           - service: gateway
-            context: infra/k8s/base/gateway
+            context: gateway
     permissions:
       contents: read
       packages: write
