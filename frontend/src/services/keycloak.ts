@@ -1,7 +1,8 @@
 import Keycloak from 'keycloak-js';
 
 const keycloak = new Keycloak({
-    url: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
+    // With ingress: Keycloak at /auth. Override with VITE_KEYCLOAK_URL if needed.
+    url: import.meta.env.VITE_KEYCLOAK_URL || (typeof window !== 'undefined' ? `${window.location.origin}/auth` : ''),
     realm: import.meta.env.VITE_KEYCLOAK_REALM || 'marketplace',
     clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'marketplace-app',
 });

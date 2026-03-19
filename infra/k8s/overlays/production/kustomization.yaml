@@ -24,6 +24,9 @@ images:
   - name: marketplace/keycloak
     newName: ghcr.io/oxrod/collector-shop/keycloak-prod
     newTag: latest
+  - name: marketplace/gateway
+    newName: ghcr.io/oxrod/collector-shop/gateway-prod
+    newTag: latest
 
 # Production secrets: use secretGenerator with env files or an external
 # secret manager (e.g. Sealed Secrets, SOPS, Vault). The literals below
@@ -79,6 +82,18 @@ patches:
               - marketplace.example.com
             secretName: marketplace-tls
   - target:
+      kind: StatefulSet
+      name: keycloak
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: KC_HOSTNAME
+          value: "marketplace.example.com"
+  - target:
       kind: Deployment
       name: backend
     patch: |-
@@ -95,7 +110,7 @@ patches:
         path: /spec/template/spec/containers/0/resources/limits/memory
         value: 1Gi
   - target:
-      kind: Deployment
+      kind: StatefulSet
       name: keycloak
     patch: |-
       - op: replace

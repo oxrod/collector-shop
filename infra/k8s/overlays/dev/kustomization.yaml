@@ -22,6 +22,9 @@ images:
   - name: marketplace/keycloak
     newName: ghcr.io/oxrod/collector-shop/keycloak-dev
     newTag: latest
+  - name: marketplace/gateway
+    newName: ghcr.io/oxrod/collector-shop/gateway-dev
+    newTag: latest
 
 secretGenerator:
   - name: db-credentials
@@ -38,14 +41,9 @@ secretGenerator:
 
 patches:
   - target:
-      kind: Deployment
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/imagePullPolicy
-        value: Always
-  - target:
-      kind: Deployment
+      kind: Ingress
+      name: marketplace-ingress
     patch: |-
       - op: replace
-        path: /spec/replicas
-        value: 1
+        path: /spec/rules/0/host
+        value: dev.marketplace.local

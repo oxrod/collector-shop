@@ -9,6 +9,7 @@ labels:
 resources:
   - postgres/deployment.yaml
   - keycloak/deployment.yaml
+  - gateway/deployment.yaml
   - backend/deployment.yaml
   - frontend/deployment.yaml
   - fraud-service/deployment.yaml

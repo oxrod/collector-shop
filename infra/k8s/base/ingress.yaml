@@ -4,8 +4,15 @@ metadata:
   name: marketplace-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - marketplace.local
+        - dev.marketplace.local
+        - staging.marketplace.local
+      secretName: marketplace-tls
   rules:
     - host: marketplace.local
       http:
@@ -14,20 +21,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: frontend
+                name: gateway
                 port:
                   number: 80
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: backend
-                port:
-                  number: 3001
-          - path: /auth
-            pathType: Prefix
-            backend:
-              service:
-                name: keycloak
-                port:
-                  number: 8080
